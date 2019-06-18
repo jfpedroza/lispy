@@ -14,7 +14,7 @@ default: build
 mpc.o:
 	$(CC) $(CFLAGS) mpc.c $(LIBS)
 
-myownlisp: mpc.o
-	$(CXX) $(CXXFLAGS) parsing.cpp $(LIBS) -o myownlisp 
+myownlisp: mpc.o parsing.cpp
+	$(CXX) $(CXXFLAGS) mpc.o parsing.cpp $(LIBS) -o myownlisp 
 
 build: myownlisp
