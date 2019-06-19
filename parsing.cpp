@@ -29,6 +29,46 @@ void add_history(char* unused) {}
 
 using namespace std;
 
+/* Use operator string to see which operation to perform */
+long eval_op(long x, char* op, long y) {
+    if (strcmp(op, "+") == 0) { return x + y; }
+    if (strcmp(op, "-") == 0) { return x - y; }
+    if (strcmp(op, "*") == 0) { return x * y; }
+    if (strcmp(op, "/") == 0) { return x / y; }
+    if (strcmp(op, "%") == 0) { return x % y; }
+    if (strcmp(op, "^") == 0) { return pow(x, y); }
+    if (strcmp(op, "add") == 0) { return x + y; }
+    if (strcmp(op, "sub") == 0) { return x - y; }
+    if (strcmp(op, "mul") == 0) { return x * y; }
+    if (strcmp(op, "div") == 0) { return x / y; }
+    if (strcmp(op, "rem") == 0) { return x % y; }
+    if (strcmp(op, "pow") == 0) { return pow(x, y); }
+    return 0;
+}
+
+long eval(mpc_ast_t* t) {
+
+    /* If tagged as number return it directly. */
+    if (strstr(t->tag, "number")) {
+        return atoi(t->contents);
+    }
+
+    /* The operator is always second child. */
+    char* op = t->children[1]->contents;
+
+    /* We store the third child in `x` */
+    long x = eval(t->children[2]);
+
+    /* Iterate the remaining children and combining. */
+    int i = 3;
+    while (strstr(t->children[i]->tag, "expr")) {
+        x = eval_op(x, op, eval(t->children[i]));
+        i++;
+    }
+
+    return x;
+}
+
 int main(int argc, char* argv[]) {
     
     /* Create some parsers */
@@ -41,7 +81,7 @@ int main(int argc, char* argv[]) {
     mpca_lang(MPCA_LANG_DEFAULT,
         "                                                   \
         number   : /-?[0-9]+(\\.[0-9]+)?/ ;                             \
-        operator : '+' | '-' | '*' | '/' | '%' | \"add\" | \"sub\" | \"mul\" | \"div\" | \"rem\" ; \
+        operator : '+' | '-' | '*' | '/' | '%' | '^' | \"add\" | \"sub\" | \"mul\" | \"div\" | \"rem\" | \"pow\" ; \
         expr     : <number> | '(' <operator> <expr>+ ')' ;  \
         lispy    : /^/ <operator> <expr>+ /$/ ;             \
         ",
@@ -62,8 +102,8 @@ int main(int argc, char* argv[]) {
         /* Attempt to Parse the user Input */
         mpc_result_t r;
         if (mpc_parse("<stdin>", input, Lispy, &r)) {
-            /* On Success Print the AST */
-            mpc_ast_print((mpc_ast_t*)r.output);
+            long result = eval((mpc_ast_t*)r.output);
+            printf("%li\n", result);
             mpc_ast_delete((mpc_ast_t*)r.output);
         } else {
             /* Otherwise Print the Error */
@@ -78,3 +118,4 @@ int main(int argc, char* argv[]) {
     mpc_cleanup(4, Number, Operator, Expr, Lispy);
     return 0;
 }
+
