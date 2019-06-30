@@ -77,8 +77,14 @@ long eval(mpc_ast_t* t) {
     long x = eval(t->children[2]);
 
     /* Iterate the remaining children and combining. */
-    for (int i = 3; strstr(t->children[i]->tag, "expr"); i++) {
+    int i;
+    for (i = 3; strstr(t->children[i]->tag, "expr"); i++) {
         x = eval_op(x, op, eval(t->children[i]));
+    }
+
+    /* If the operator is - and has a single operand */
+    if (strcmp(op, "-") == 0 && i == 3) {
+        return -x;
     }
 
     return x;
