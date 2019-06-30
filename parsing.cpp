@@ -43,6 +43,23 @@ long eval_op(long x, char* op, long y) {
     if (strcmp(op, "div") == 0) { return x / y; }
     if (strcmp(op, "rem") == 0) { return x % y; }
     if (strcmp(op, "pow") == 0) { return pow(x, y); }
+
+    if (strcmp(op, "min") == 0) {
+        if (x < y) {
+            return x;
+        } else {
+            return y;
+        }
+    }
+
+    if (strcmp(op, "max") == 0) {
+        if (x > y) {
+            return x;
+        } else {
+            return y;
+        }
+    }
+
     return 0;
 }
 
@@ -60,10 +77,8 @@ long eval(mpc_ast_t* t) {
     long x = eval(t->children[2]);
 
     /* Iterate the remaining children and combining. */
-    int i = 3;
-    while (strstr(t->children[i]->tag, "expr")) {
+    for (int i = 3; strstr(t->children[i]->tag, "expr"); i++) {
         x = eval_op(x, op, eval(t->children[i]));
-        i++;
     }
 
     return x;
@@ -81,7 +96,7 @@ int main(int argc, char* argv[]) {
     mpca_lang(MPCA_LANG_DEFAULT,
         "                                                   \
         number   : /-?[0-9]+(\\.[0-9]+)?/ ;                             \
-        operator : '+' | '-' | '*' | '/' | '%' | '^' | \"add\" | \"sub\" | \"mul\" | \"div\" | \"rem\" | \"pow\" ; \
+        operator : '+' | '-' | '*' | '/' | '%' | '^' | \"add\" | \"sub\" | \"mul\" | \"div\" | \"rem\" | \"pow\" | \"min\" | \"max\" ; \
         expr     : <number> | '(' <operator> <expr>+ ')' ;  \
         lispy    : /^/ <operator> <expr>+ /$/ ;             \
         ",
@@ -94,7 +109,7 @@ int main(int argc, char* argv[]) {
     /* In a never ending loop */
     while(true) {
         /* Output our prompt  and get input */
-        char *input = readline("lipsy> ");
+        char *input = readline("lispy> ");
 
         /* Add input to history */
         add_history(input);
