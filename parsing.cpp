@@ -103,8 +103,8 @@ int main(int argc, char* argv[]) {
         Number, Operator, Expr, Lispy);
 
     /* Print Version and Exit Information */
-    puts("Lispy Version 0.0.0.0.1");
-    puts("Press Ctrl+c to Exit\n");
+    cout << "Lispy Version 0.0.0.0.1" << endl;
+    cout << "Press Ctrl+c to Exit\n" << endl;
 
     /* In a never ending loop */
     while(true) {
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
         mpc_result_t r;
         if (mpc_parse("<stdin>", input, Lispy, &r)) {
             long result = eval((mpc_ast_t*)r.output);
-            printf("%li\n", result);
+            cout << result << endl;
             mpc_ast_delete((mpc_ast_t*)r.output);
         } else {
             /* Otherwise Print the Error */
