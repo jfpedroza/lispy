@@ -1,5 +1,5 @@
-#ifndef MYOWNLISP_H
-#define MYOWNLISP_H
+#ifndef MYOWNLISP_HPP
+#define MYOWNLISP_HPP
 
 /* If we are compiling on Windows compile these functions */
 #ifdef _WIN32
@@ -26,4 +26,4 @@ void add_history(char* unused) {}
 #include <editline/history.h>
 #endif // WIN32
 
-#endif // MYOWNLISP_H
+#endif // MYOWNLISP_HPP
