@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
+#include "lispy_config.h"
 #include "mpc.h"
 #include "lval_error.hpp"
 #include "parsing.hpp"
