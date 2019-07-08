@@ -16,5 +16,5 @@ include_directories("${PROJECT_BINARY_DIR}")
 include_directories ("${PROJECT_SOURCE_DIR}/mpc")
 add_subdirectory(mpc)
 
-add_executable(lispy main.cpp lval_error.cpp)
+add_executable(lispy main.cpp lval.cpp lval_error.cpp builtin.cpp)
 target_link_libraries(lispy edit MPC)

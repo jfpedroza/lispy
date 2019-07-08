@@ -1,8 +1,9 @@
-#ifndef MYOWNLISP_HPP
-#define MYOWNLISP_HPP
+#ifndef EDITLINE_HPP
+#define EDITLINE_HPP
 
 /* If we are compiling on Windows compile these functions */
 #ifdef _WIN32
+#include <cstdlib>
 #include <string.h>
 
 static char buffer[2048];
@@ -26,4 +27,4 @@ void add_history(char* unused) {}
 #include <editline/history.h>
 #endif // WIN32
 
-#endif // MYOWNLISP_HPP
+#endif // EDITLINE_HPP
