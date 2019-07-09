@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include "lispy_config.h"
 #include "mpc.h"
+#include "generated.hpp"
 #include "lval.hpp"
 #include "editline.hpp"
 
@@ -33,8 +34,8 @@ int main(int argc, char* argv[]) {
         Integer, Decimal, Number, Symbol, Sexpr, Expr, Lispy);
 
     /* Print Version and Exit Information */
-    cout << "Lispy Version 0.0.0.0.5" << endl;
-    cout << "Press Ctrl+c to Exit\n" << endl;
+    cout << "Lispy Version " << LISPY_VERSION << endl;
+    cout << "Press Ctrl+C to Exit\n" << endl;
 
     while(true) {
         /* Output our prompt  and get input */
