@@ -11,6 +11,7 @@ enum class lval_type {
     decimal,
     symbol,
     sexpr,
+    qexpr,
     error
 };
 
@@ -35,6 +36,8 @@ struct lval {
     static lval* error(std::string err);
 
     static lval* sexpr();
+
+    static lval* qexpr();
 
     ~lval();
 

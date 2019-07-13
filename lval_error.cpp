@@ -26,5 +26,17 @@ namespace lerr {
     string cant_oper_non_num() {
         return "Cannot operate on non-number!";
     }
+
+    string too_many_args(const string &func) {
+        return "Function '" + func + "' passed too many arguments!";
+    }
+
+    string passed_incorrect_types(const string &func) {
+        return "Function '" + func + "' passed incorrect types!";
+    }
+
+    string passed_nil_expr(const string &func) {
+        return "Function '" + func + "' passed {}!";
+    }
 }
 

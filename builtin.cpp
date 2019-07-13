@@ -40,6 +40,9 @@ switch (X->type) { \
             x->integ = HANDLER(x->integ, y->integ); return x \
             )
 
+#define LASSERT(args, cond, err) \
+  if (!(cond)) { delete args; return error(err); }
+
 namespace builtin {
 
     using std::unordered_map;
@@ -47,7 +50,15 @@ namespace builtin {
 
     auto error = lval::error;
 
-    unordered_map<string, function<lval*(lval*, lval*)>> symbol_table = {
+    unordered_map<string, function<lval*(lval*)>> symbol_table = {
+        {"head", head},
+        {"tail", tail},
+        {"list", list},
+        {"eval", eval},
+        {"join", join}
+    };
+
+    unordered_map<string, function<lval*(lval*, lval*)>> operator_table = {
         {"+", add},
         {"-", substract},
         {"*", multiply},
@@ -55,15 +66,22 @@ namespace builtin {
         {"%", reminder},
         {"^", power},
         {"min", minimum},
-        {"max", maximum},
+        {"max", maximum}
     };
 
-    lval* handle(lval *v, const string &op) {
+    lval* handle(lval *v, const string &func) {
+        auto symbol_it = symbol_table.find(func);
+        if (symbol_it != symbol_table.end()) {
+            auto handler = symbol_it->second;
+            return handler(v);
+        } else {
+            return handle_op(v, func);
+        }
+    }
+
+    lval* handle_op(lval *v, const string &op) {
         for (auto cell: v->cells) {
-            if (cell->type != lval_type::integer && cell->type != lval_type::decimal) {
-                delete v;
-                return error(lerr::cant_oper_non_num());
-            }
+            LASSERT(v, cell->type == lval_type::integer || cell->type == lval_type::decimal, lerr::cant_oper_non_num())
         }
 
         auto x = v->pop_first();
@@ -71,12 +89,12 @@ namespace builtin {
             x = negate(x);
         }
 
-        auto symbol_it = symbol_table.find(op);
-        if (symbol_it == symbol_table.end()) {
+        auto op_it = operator_table.find(op);
+        if (op_it == operator_table.end()) {
             return error(lerr::unknown_sym(op));
         }
 
-        auto handler = symbol_it->second;
+        auto handler = op_it->second;
 
         while(!v->cells.empty()) {
             auto y = v->pop_first();
@@ -173,5 +191,64 @@ namespace builtin {
 
     lval* maximum(lval *x, lval *y) {
         return min_max(std::greater_equal<double>(), x, y);
+    }
+
+    lval* head(lval *v) {
+        LASSERT(v, v->cells.size() == 1, lerr::too_many_args("head"))
+
+        auto begin = v->cells.begin();
+
+        LASSERT(v, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_types("head"))
+        LASSERT(v, (*begin)->cells.size() != 0, lerr::passed_nil_expr("head"))
+
+        auto qexpr = lval::take(v, begin);
+        while (qexpr->cells.size() > 1) {
+            delete qexpr->pop(1);
+        }
+
+        return qexpr;
+    }
+
+    lval* tail(lval *v) {
+        LASSERT(v, v->cells.size() == 1, lerr::too_many_args("tail"))
+
+        auto begin = v->cells.begin();
+
+        LASSERT(v, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_types("tail"))
+        LASSERT(v, (*begin)->cells.size() != 0, lerr::passed_nil_expr("tail"))
+
+        auto qexpr = lval::take(v, begin);
+        delete qexpr->pop_first();
+        return qexpr;
+    }
+
+    lval* list(lval *v) {
+        v->type = lval_type::qexpr;
+        return v;
+    }
+
+    lval* eval(lval *v) {
+        LASSERT(v, v->cells.size() == 1, lerr::too_many_args("eval"))
+        auto begin = v->cells.begin();
+
+        LASSERT(v, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_types("eval"))
+
+        auto qexpr = lval::take(v, begin);
+        qexpr->type = lval_type::sexpr;
+        return lval::eval(qexpr);
+    }
+
+    lval* join(lval *v) {
+        for (auto cell: v->cells) {
+            LASSERT(v, cell->type == lval_type::qexpr, lerr::passed_incorrect_types("join"))
+        }
+
+        auto x = v->pop_first();
+        for (auto expr: v->cells) {
+            x->cells.splice(x->cells.end(), expr->cells);
+        }
+
+        delete v;
+        return x;
     }
 }

@@ -9,7 +9,7 @@ using std::string;
 using std::vector;
 using std::ostream;
 
-vector<string> content_skip_strings = {"(", ")"};
+vector<string> content_skip_strings = {"(", ")", "{", "}"};
 bool should_skip_child(mpc_ast_t *child) {
     auto end = content_skip_strings.end();
     auto it = std::find(content_skip_strings.begin(), end, child->contents);
@@ -43,6 +43,11 @@ lval* lval::error(string err) {
 
 lval* lval::sexpr() {
     auto val = new lval(lval_type::sexpr);
+    return val;
+}
+
+lval* lval::qexpr() {
+    auto val = new lval(lval_type::qexpr);
     return val;
 }
 
@@ -107,6 +112,8 @@ lval* lval::read(mpc_ast_t *t) {
     lval *x = nullptr;
     if (strcmp(t->tag, ">") == 0 || strstr(t->tag, "sexpr")) {
         x = sexpr();
+    } else if (strstr(t->tag, "qexpr")) {
+        x = qexpr();
     }
 
     for (int i = 0; i < t->children_num; i++) {
@@ -177,6 +184,9 @@ ostream& operator<<(ostream &os, const lval &value) {
 
         case lval_type::sexpr:
             return value.print_expr(os, '(', ')');
+
+        case lval_type::qexpr:
+            return value.print_expr(os, '{', '}');
     }
 
     return os;

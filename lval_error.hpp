@@ -10,6 +10,9 @@ namespace lerr {
     std::string int_mod();
     std::string sexpr_not_symbol();
     std::string cant_oper_non_num();
+    std::string too_many_args(const std::string &func);
+    std::string passed_incorrect_types(const std::string &func);
+    std::string passed_nil_expr(const std::string &func);
 }
 
 #endif // LVAL_ERROR_HPP
