@@ -58,9 +58,9 @@ lval* lval::pop(const iter &it) {
     return x;
 }
 
-lval* lval::pop(uint i) {
+lval* lval::pop(size_t i) {
     auto it = cells.begin();
-    for (uint pos = 0; pos < i; pos++, ++it) {}
+    for (size_t pos = 0; pos < i; pos++, ++it) {}
 
     return pop(it);
 }
@@ -75,7 +75,7 @@ lval* lval::take(lval *v, const iter &it) {
     return x;
 }
 
-lval* lval::take(lval *v, uint i) {
+lval* lval::take(lval *v, size_t i) {
     auto x = v->pop(i);
     delete v;
     return x;

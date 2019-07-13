@@ -40,13 +40,13 @@ struct lval {
 
     lval* pop(const iter &it);
 
-    lval* pop(uint i);
+    lval* pop(size_t i);
 
     lval* pop_first();
 
     static lval* take(lval *v, const iter &it);
 
-    static lval* take(lval *v, uint i);
+    static lval* take(lval *v, size_t i);
 
     static lval* take_first(lval *v);
 

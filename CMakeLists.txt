@@ -18,13 +18,13 @@ add_subdirectory(mpc)
 
 add_executable(gen_headers gen_headers.cpp)
 
-add_custom_command (
+add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated.hpp
   COMMAND gen_headers ${CMAKE_CURRENT_BINARY_DIR}/generated.hpp
-  DEPENDS gen_headers
+  DEPENDS gen_headers language.txt
   )
 
-include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(lispy main.cpp lval.cpp lval_error.cpp builtin.cpp ${CMAKE_CURRENT_BINARY_DIR}/generated.hpp)
 target_link_libraries(lispy edit MPC)

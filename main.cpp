@@ -8,6 +8,7 @@
 
 using std::cout;
 using std::endl;
+using std::string;
 
 int main(int argc, char* argv[]) {
 
@@ -21,17 +22,7 @@ int main(int argc, char* argv[]) {
     mpc_parser_t* Lispy = mpc_new("lispy");
 
     /* Define them with the following Language */
-    mpca_lang(MPCA_LANG_DEFAULT,
-        "                                                   \
-        integer  : /-?[0-9]+/ ;                            \
-        decimal  : /-?[0-9]+\\.[0-9]+/ ;                   \
-        number   : <decimal> | <integer>;                   \
-        symbol   : '+' | '-' | '*' | '/' | '%' | '^' | \"add\" | \"sub\" | \"mul\" | \"div\" | \"rem\" | \"pow\" | \"min\" | \"max\" ; \
-        sexpr    : '(' <expr>* ')' ; \
-        expr     : <number> | <symbol> | <sexpr> ;  \
-        lispy    : /^/ <expr>* /$/ ;             \
-        ",
-        Integer, Decimal, Number, Symbol, Sexpr, Expr, Lispy);
+    mpca_lang(MPCA_LANG_DEFAULT, language_grammar, Integer, Decimal, Number, Symbol, Sexpr, Expr, Lispy);
 
     /* Print Version and Exit Information */
     cout << "Lispy Version " << LISPY_VERSION << endl;
