@@ -48,12 +48,12 @@ namespace builtin {
     auto error = lval::error;
 
     unordered_map<string, function<lval*(lval*, lval*)>> symbol_table = {
-        {"+", add}, {"add", add},
-        {"-", substract}, {"sub", substract},
-        {"*", multiply}, {"mul", multiply},
-        {"/", divide}, {"div", divide},
-        {"%", reminder}, {"rem", reminder},
-        {"^", power}, {"pow", power},
+        {"+", add},
+        {"-", substract},
+        {"*", multiply},
+        {"/", divide},
+        {"%", reminder},
+        {"^", power},
         {"min", minimum},
         {"max", maximum},
     };
