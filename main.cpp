@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdlib>
+#include <csignal>
 #include "lispy_config.h"
 #include "mpc.h"
 #include "generated.hpp"
@@ -10,16 +11,23 @@ using std::cout;
 using std::endl;
 using std::string;
 
-int main(int argc, char* argv[]) {
+void exit_handler(int);
 
-    /* Create some parsers */
-    mpc_parser_t* Integer = mpc_new("integer");
-    mpc_parser_t* Decimal = mpc_new("decimal");
-    mpc_parser_t* Number = mpc_new("number");
-    mpc_parser_t* Symbol = mpc_new("symbol");
-    mpc_parser_t* Sexpr = mpc_new("sexpr");
-    mpc_parser_t* Expr = mpc_new("expr");
-    mpc_parser_t* Lispy = mpc_new("lispy");
+/* Create some parsers */
+mpc_parser_t* Integer = mpc_new("integer");
+mpc_parser_t* Decimal = mpc_new("decimal");
+mpc_parser_t* Number = mpc_new("number");
+mpc_parser_t* Symbol = mpc_new("symbol");
+mpc_parser_t* Sexpr = mpc_new("sexpr");
+mpc_parser_t* Expr = mpc_new("expr");
+mpc_parser_t* Lispy = mpc_new("lispy");
+
+int main(int argc, char* argv[]) {
+    struct sigaction sig_handler;
+    sig_handler.sa_handler = exit_handler;
+    sigemptyset(&sig_handler.sa_mask);
+    sig_handler.sa_flags = 0;
+    sigaction(SIGINT, &sig_handler, nullptr);
 
     /* Define them with the following Language */
     mpca_lang(MPCA_LANG_DEFAULT, language_grammar, Integer, Decimal, Number, Symbol, Sexpr, Expr, Lispy);
@@ -52,8 +60,12 @@ int main(int argc, char* argv[]) {
         free(input);
     }
 
-    /* Undefine and Delete our Parsers */
-    mpc_cleanup(7, Decimal, Integer, Number, Symbol, Sexpr, Expr, Lispy);
     return 0;
 }
 
+void exit_handler(int) {
+    /* Undefine and Delete our Parsers */
+    mpc_cleanup(7, Decimal, Integer, Number, Symbol, Sexpr, Expr, Lispy);
+    cout << "\nBye" << endl;
+    exit(0);
+}
