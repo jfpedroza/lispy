@@ -5,7 +5,7 @@
 
 namespace lerr {
     std::string bad_num();
-    std::string unknown_sym(std::string symbol);
+    std::string unknown_sym(const std::string &symbol);
     std::string div_zero();
     std::string int_mod();
     std::string sexpr_not_symbol();

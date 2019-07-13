@@ -58,7 +58,7 @@ namespace builtin {
         {"max", maximum},
     };
 
-    lval* handle(lval *v, string op) {
+    lval* handle(lval *v, const string &op) {
         for (auto cell: v->cells) {
             if (cell->type != lval_type::integer && cell->type != lval_type::decimal) {
                 delete v;

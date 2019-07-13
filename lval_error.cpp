@@ -7,7 +7,7 @@ namespace lerr {
         return "Invalid number!";
     }
 
-    string unknown_sym(string symbol) {
+    string unknown_sym(const string &symbol) {
         return "Unkown symbol '" + symbol + "'";
     }
 

@@ -6,7 +6,7 @@
 struct lval;
 
 namespace builtin {
-    lval* handle(lval *v, std::string op);
+    lval* handle(lval *v, const std::string &op);
     lval* add(lval *x, lval *y);
     lval* substract(lval *x, lval *y);
     lval* multiply(lval *x, lval *y);
