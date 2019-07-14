@@ -60,7 +60,8 @@ namespace builtin {
         {"eval", eval},
         {"join", join},
         {"cons", cons},
-        {"len", len}
+        {"len", len},
+        {"init", init}
     };
 
     unordered_map<string, function<lval*(lval*, lval*)>> operator_table = {
@@ -281,5 +282,19 @@ namespace builtin {
         auto length = new lval((long)x->cells.size());
         delete x;
         return length;
+    }
+
+    lval* init(lval *a) {
+        LASSERT_NUM_ARGS("init", a, 1)
+        auto begin = a->cells.begin();
+
+        LASSERT(a, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_types("init"))
+        LASSERT(a, (*begin)->cells.size() != 0, lerr::passed_nil_expr("init"))
+
+        auto v = lval::take(a, begin);
+        auto end = v->cells.end();
+        end--;
+        delete v->pop(end);
+        return v;
     }
 }
