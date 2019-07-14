@@ -43,6 +43,9 @@ switch (X->type) { \
 #define LASSERT(args, cond, err) \
   if (!(cond)) { delete args; return error(err); }
 
+#define LASSERT_NUM_ARGS(func, args, num) \
+  LASSERT(args, args->cells.size() == num, lerr::mismatched_num_args(func, args->cells.size(), num))
+
 namespace builtin {
 
     using std::unordered_map;
@@ -69,23 +72,23 @@ namespace builtin {
         {"max", maximum}
     };
 
-    lval* handle(lval *v, const string &func) {
+    lval* handle(lval *a, const string &func) {
         auto symbol_it = symbol_table.find(func);
         if (symbol_it != symbol_table.end()) {
             auto handler = symbol_it->second;
-            return handler(v);
+            return handler(a);
         } else {
-            return handle_op(v, func);
+            return handle_op(a, func);
         }
     }
 
-    lval* handle_op(lval *v, const string &op) {
-        for (auto cell: v->cells) {
-            LASSERT(v, cell->type == lval_type::integer || cell->type == lval_type::decimal, lerr::cant_oper_non_num())
+    lval* handle_op(lval *a, const string &op) {
+        for (auto cell: a->cells) {
+            LASSERT(a, cell->type == lval_type::integer || cell->type == lval_type::decimal, lerr::cant_oper_non_num())
         }
 
-        auto x = v->pop_first();
-        if (op == "-" && v->cells.empty()) {
+        auto x = a->pop_first();
+        if (op == "-" && a->cells.empty()) {
             x = negate(x);
         }
 
@@ -96,15 +99,15 @@ namespace builtin {
 
         auto handler = op_it->second;
 
-        while(!v->cells.empty()) {
-            auto y = v->pop_first();
+        while(!a->cells.empty()) {
+            auto y = a->pop_first();
             x = handler(x, y);
             delete y;
 
             if (x->type == lval_type::error) break;
         }
 
-        delete v;
+        delete a;
         return x;
     }
 
@@ -193,62 +196,62 @@ namespace builtin {
         return min_max(std::greater_equal<double>(), x, y);
     }
 
-    lval* head(lval *v) {
-        LASSERT(v, v->cells.size() == 1, lerr::too_many_args("head"))
+    lval* head(lval *a) {
+        LASSERT_NUM_ARGS("head", a, 1)
 
-        auto begin = v->cells.begin();
+        auto begin = a->cells.begin();
 
-        LASSERT(v, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_types("head"))
-        LASSERT(v, (*begin)->cells.size() != 0, lerr::passed_nil_expr("head"))
+        LASSERT(a, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_types("head"))
+        LASSERT(a, (*begin)->cells.size() != 0, lerr::passed_nil_expr("head"))
 
-        auto qexpr = lval::take(v, begin);
-        while (qexpr->cells.size() > 1) {
-            delete qexpr->pop(1);
+        auto v = lval::take(a, begin);
+        while (v->cells.size() > 1) {
+            delete v->pop(1);
         }
 
-        return qexpr;
-    }
-
-    lval* tail(lval *v) {
-        LASSERT(v, v->cells.size() == 1, lerr::too_many_args("tail"))
-
-        auto begin = v->cells.begin();
-
-        LASSERT(v, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_types("tail"))
-        LASSERT(v, (*begin)->cells.size() != 0, lerr::passed_nil_expr("tail"))
-
-        auto qexpr = lval::take(v, begin);
-        delete qexpr->pop_first();
-        return qexpr;
-    }
-
-    lval* list(lval *v) {
-        v->type = lval_type::qexpr;
         return v;
     }
 
-    lval* eval(lval *v) {
-        LASSERT(v, v->cells.size() == 1, lerr::too_many_args("eval"))
-        auto begin = v->cells.begin();
+    lval* tail(lval *a) {
+        LASSERT_NUM_ARGS("tail", a, 1)
 
-        LASSERT(v, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_types("eval"))
+        auto begin = a->cells.begin();
 
-        auto qexpr = lval::take(v, begin);
-        qexpr->type = lval_type::sexpr;
-        return lval::eval(qexpr);
+        LASSERT(a, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_types("tail"))
+        LASSERT(a, (*begin)->cells.size() != 0, lerr::passed_nil_expr("tail"))
+
+        auto v = lval::take(a, begin);
+        delete v->pop_first();
+        return v;
     }
 
-    lval* join(lval *v) {
-        for (auto cell: v->cells) {
-            LASSERT(v, cell->type == lval_type::qexpr, lerr::passed_incorrect_types("join"))
+    lval* list(lval *a) {
+        a->type = lval_type::qexpr;
+        return a;
+    }
+
+    lval* eval(lval *a) {
+        LASSERT_NUM_ARGS("eval", a, 1)
+        auto begin = a->cells.begin();
+
+        LASSERT(a, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_types("eval"))
+
+        auto x = lval::take(a, begin);
+        x->type = lval_type::sexpr;
+        return lval::eval(x);
+    }
+
+    lval* join(lval *a) {
+        for (auto cell: a->cells) {
+            LASSERT(a, cell->type == lval_type::qexpr, lerr::passed_incorrect_types("join"))
         }
 
-        auto x = v->pop_first();
-        for (auto expr: v->cells) {
+        auto x = a->pop_first();
+        for (auto expr: a->cells) {
             x->cells.splice(x->cells.end(), expr->cells);
         }
 
-        delete v;
+        delete a;
         return x;
     }
 }

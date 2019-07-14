@@ -6,8 +6,8 @@
 struct lval;
 
 namespace builtin {
-    lval* handle(lval *v, const std::string &func);
-    lval* handle_op(lval *v, const std::string &op);
+    lval* handle(lval *args, const std::string &func);
+    lval* handle_op(lval *args, const std::string &op);
 
     // Operators
     lval* add(lval *x, lval *y);
@@ -23,11 +23,11 @@ namespace builtin {
     lval* maximum(lval *x, lval *y);
 
     // Q-Expressions
-    lval* head(lval *v);
-    lval* tail(lval *v);
-    lval* list(lval *v);
-    lval* eval(lval *v);
-    lval* join(lval *v);
+    lval* head(lval *args);
+    lval* tail(lval *args);
+    lval* list(lval *args);
+    lval* eval(lval *args);
+    lval* join(lval *args);
 }
 
 #endif // LISPY_BUILTIN_HPP

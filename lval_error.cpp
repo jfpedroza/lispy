@@ -1,6 +1,8 @@
+#include <sstream>
 #include "lval_error.hpp"
 
 using std::string;
+using std::stringstream;
 
 namespace lerr {
     string bad_num() {
@@ -27,8 +29,10 @@ namespace lerr {
         return "Cannot operate on non-number!";
     }
 
-    string too_many_args(const string &func) {
-        return "Function '" + func + "' passed too many arguments!";
+    string mismatched_num_args(const string &func, size_t got, size_t expected) {
+        stringstream ss;
+        ss << "Function '" << func << "' passed incorrect number of arguments. Got " << got << ", Expected " << expected << ".";
+        return ss.str();
     }
 
     string passed_incorrect_types(const string &func) {
