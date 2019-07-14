@@ -59,7 +59,8 @@ namespace builtin {
         {"list", list},
         {"eval", eval},
         {"join", join},
-        {"cons", cons}
+        {"cons", cons},
+        {"len", len}
     };
 
     unordered_map<string, function<lval*(lval*, lval*)>> operator_table = {
@@ -268,5 +269,17 @@ namespace builtin {
         delete a;
 
         return v;
+    }
+
+    lval* len(lval *a) {
+        LASSERT_NUM_ARGS("len", a, 1)
+        auto begin = a->cells.begin();
+
+        LASSERT(a, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_types("len"))
+
+        auto x = lval::take(a, begin);
+        auto length = new lval((long)x->cells.size());
+        delete x;
+        return length;
     }
 }

@@ -29,6 +29,7 @@ namespace builtin {
     lval* eval(lval *args);
     lval* join(lval *args);
     lval* cons(lval *args);
+    lval* len(lval *args);
 }
 
 #endif // LISPY_BUILTIN_HPP
