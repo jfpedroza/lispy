@@ -21,8 +21,8 @@ namespace lerr {
         return "Module operation can only be applied to integers!";
     }
 
-    string sexpr_not_symbol() {
-        return "S-expression Does not start with symbol!";
+    string sexpr_not_function() {
+        return "S-expression does not start with function!";
     }
 
     string cant_oper_non_num() {

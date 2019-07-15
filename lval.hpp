@@ -4,16 +4,23 @@
 #include <iostream>
 #include <string>
 #include <list>
+#include <functional>
 #include "mpc.h"
 
 enum class lval_type {
     integer,
     decimal,
     symbol,
+    func,
     sexpr,
     qexpr,
     error
 };
+
+struct lval;
+struct lenv;
+
+using lbuiltin = std::function<lval*(lenv*, lval*)>;
 
 struct lval {
     lval_type type;
@@ -21,9 +28,13 @@ struct lval {
     double dec;
     std::string err;
     std::string sym;
-    std::list<lval*> cells;
+    lbuiltin fun;
 
-    using iter = std::list<lval*>::iterator;
+    using cell_type = std::list<lval*>;
+
+    cell_type cells;
+
+    using iter = cell_type::iterator;
 
     lval(lval_type type);
 
@@ -32,6 +43,12 @@ struct lval {
     lval(double num);
 
     explicit lval(std::string sym);
+
+    lval(lbuiltin fun);
+
+    lval(const lval &other);
+
+    lval(const lval *const other);
 
     static lval* error(std::string err);
 
@@ -59,9 +76,9 @@ struct lval {
 
     static lval* read(mpc_ast_t *t);
 
-    static lval* eval(lval *v);
+    static lval* eval(lenv *e, lval *v);
 
-    static lval* eval_sexpr(lval *v);
+    static lval* eval_sexpr(lenv *e, lval *v);
 
     friend std::ostream& operator<<(std::ostream &os, const lval &value);
 

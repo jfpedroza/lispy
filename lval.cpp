@@ -3,6 +3,7 @@
 #include <vector>
 #include "lval.hpp"
 #include "lval_error.hpp"
+#include "lenv.hpp"
 #include "builtin.hpp"
 
 using std::string;
@@ -34,6 +35,29 @@ lval::lval(string sym) {
     this->type = lval_type::symbol;
     this->sym = sym;
 }
+
+lval::lval(lbuiltin fun) {
+    this->type = lval_type::func;
+    this->fun = fun;
+}
+
+lval::lval(const lval &other) {
+    this->type = other.type;
+    switch (this->type) {
+        case lval_type::integer: this->integ = other.integ; break;
+        case lval_type::decimal: this->dec = other.dec; break;
+        case lval_type::error: this->err = other.err; break;
+        case lval_type::symbol: this->sym = other.sym; break;
+        case lval_type::func: this->fun = other.fun; break;
+        case lval_type::sexpr:
+        case lval_type::qexpr:
+            this->cells = cell_type(other.cells.size(), nullptr);
+            std::transform(other.cells.begin(), other.cells.end(), this->cells.begin(), [](auto cell) { return new lval(cell); });
+            break;
+    }
+}
+
+lval::lval(const lval *const other): lval(*other) {}
 
 lval* lval::error(string err) {
     auto val = new lval(lval_type::error);
@@ -126,14 +150,20 @@ lval* lval::read(mpc_ast_t *t) {
     return x;
 }
 
-lval* lval::eval(lval *v) {
-    if (v->type == lval_type::sexpr) return eval_sexpr(v);
+lval* lval::eval(lenv *e, lval *v) {
+    if (v->type == lval_type::symbol) {
+        auto x = e->get(v->sym);
+        delete v;
+        return x;
+    }
+
+    if (v->type == lval_type::sexpr) return eval_sexpr(e, v);
 
     return v;
 }
 
-lval* lval::eval_sexpr(lval *v) {
-    std::transform(v->cells.begin(), v->cells.end(), v->cells.begin(), eval);
+lval* lval::eval_sexpr(lenv *e, lval *v) {
+    std::transform(v->cells.begin(), v->cells.end(), v->cells.begin(), std::bind(eval, e, std::placeholders::_1));
 
     for (auto it = v->cells.begin(); it != v->cells.end(); ++it) {
         if ((*it)->type == lval_type::error) return take(v, it);
@@ -144,13 +174,13 @@ lval* lval::eval_sexpr(lval *v) {
     if (v->cells.size() == 1) return take_first(v);
 
     auto f = v->pop_first();
-    if (f->type != lval_type::symbol) {
+    if (f->type != lval_type::func) {
         delete f;
         delete v;
-        return error(lerr::sexpr_not_symbol());
+        return error(lerr::sexpr_not_function());
     }
 
-    auto result = builtin::handle(v, f->sym);
+    auto result = f->fun(e, v);
     delete f;
 
     return result;
@@ -178,6 +208,9 @@ ostream& operator<<(ostream &os, const lval &value) {
 
         case lval_type::symbol:
             return os << value.sym;
+
+        case lval_type::func:
+            return os << "<function>";
 
         case lval_type::error:
             return os << "Error: " << value.err;

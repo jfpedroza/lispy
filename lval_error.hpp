@@ -8,7 +8,7 @@ namespace lerr {
     std::string unknown_sym(const std::string &symbol);
     std::string div_zero();
     std::string int_mod();
-    std::string sexpr_not_symbol();
+    std::string sexpr_not_function();
     std::string cant_oper_non_num();
     std::string mismatched_num_args(const std::string &func, size_t got, size_t expected);
     std::string passed_incorrect_types(const std::string &func);

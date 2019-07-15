@@ -5,6 +5,7 @@
 #include "mpc.h"
 #include "generated.hpp"
 #include "lval.hpp"
+#include "lenv.hpp"
 #include "editline.hpp"
 
 using std::cout;
@@ -37,6 +38,8 @@ int main(int argc, char* argv[]) {
     cout << "Lispy Version " << LISPY_VERSION << endl;
     cout << "Press Ctrl+C to Exit\n" << endl;
 
+    auto env = lenv();
+
     while(true) {
         /* Output our prompt  and get input */
         char *input = readline("lispy> ");
@@ -48,7 +51,7 @@ int main(int argc, char* argv[]) {
         mpc_result_t r;
         if (mpc_parse("<stdin>", input, Lispy, &r)) {
             lval *result = lval::read((mpc_ast_t*)r.output);
-            result = lval::eval(result);
+            result = lval::eval(&env, result);
             cout << *result << endl;
             delete result;
             mpc_ast_delete((mpc_ast_t*)r.output);
