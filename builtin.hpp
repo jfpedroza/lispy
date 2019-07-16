@@ -7,9 +7,13 @@
 struct lval;
 struct lenv;
 
+using lbuiltin = std::function<lval*(lenv*, lval*)>;
+
 namespace builtin {
+
+    void add_builtins(lenv *env);
+    lbuiltin ope(const std::string &op);
     lval* handle_op(lenv *env, lval *args, const std::string &op);
-    std::function<lval*(lenv*, lval*)> ope(lenv *env, lval *args, const std::string &op);
 
     // Operators
     lval* add(lval *x, lval *y);
@@ -24,7 +28,7 @@ namespace builtin {
     lval* minimum(lval *x, lval *y);
     lval* maximum(lval *x, lval *y);
 
-    // Q-Expressions
+    // List functions
     lval* head(lenv *env, lval *args);
     lval* tail(lenv *env, lval *args);
     lval* list(lenv *env, lval *args);
@@ -33,6 +37,9 @@ namespace builtin {
     lval* cons(lenv *env, lval *args);
     lval* len(lenv *env, lval *args);
     lval* init(lenv *env, lval *args);
+
+    // Variable functions
+    lval* def(lenv *env, lval *args);
 }
 
 #endif // LISPY_BUILTIN_HPP

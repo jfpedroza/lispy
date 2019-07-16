@@ -10,6 +10,20 @@ using std::string;
 using std::vector;
 using std::ostream;
 
+ostream& operator<<(ostream &os, const lval_type &type) {
+    switch (type) {
+        case lval_type::integer: return os << "Integer";
+        case lval_type::decimal: return os << "Decimal";
+        case lval_type::number: return os << "Number";
+        case lval_type::error: return os << "Error";
+        case lval_type::symbol: return os << "Symbol";
+        case lval_type::func: return os << "Function";
+        case lval_type::sexpr: return os << "S-Expression";
+        case lval_type::qexpr: return os << "Q-Expression";
+        default: return os << "Unknown";
+    }
+}
+
 vector<string> content_skip_strings = {"(", ")", "{", "}"};
 bool should_skip_child(mpc_ast_t *child) {
     auto end = content_skip_strings.end();

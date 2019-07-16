@@ -4,12 +4,13 @@
 #include <iostream>
 #include <string>
 #include <list>
-#include <functional>
 #include "mpc.h"
+#include "builtin.hpp"
 
 enum class lval_type {
     integer,
     decimal,
+    number,
     symbol,
     func,
     sexpr,
@@ -17,10 +18,9 @@ enum class lval_type {
     error
 };
 
-struct lval;
-struct lenv;
+std::ostream& operator<<(std::ostream &os, const lval_type &type);
 
-using lbuiltin = std::function<lval*(lenv*, lval*)>;
+struct lenv;
 
 struct lval {
     lval_type type;

@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
     cout << "Press Ctrl+C to Exit\n" << endl;
 
     auto env = lenv();
+    builtin::add_builtins(&env);
 
     while(true) {
         /* Output our prompt  and get input */

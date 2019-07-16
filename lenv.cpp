@@ -15,7 +15,7 @@ lenv::~lenv() {
 lval* lenv::get(const string &sym) const {
     auto it = symbols.find(sym);
     if (it != symbols.end()) {
-        return it->second;
+        return new lval(it->second);
     }
 
     return error(lerr::unknown_sym(sym));
@@ -29,4 +29,8 @@ void lenv::put(const string &sym, const lval *const v) {
     } else {
         symbols.insert(std::make_pair(sym, new lval(v)));
     }
+}
+
+void lenv::add_builtin(const string &name, lbuiltin func) {
+    symbols.insert(std::make_pair(name, new lval(func)));
 }
