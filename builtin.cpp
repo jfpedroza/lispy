@@ -53,17 +53,6 @@ namespace builtin {
 
     auto error = lval::error;
 
-    unordered_map<string, function<lval*(lval*)>> symbol_table = {
-        {"head", head},
-        {"tail", tail},
-        {"list", list},
-        {"eval", eval},
-        {"join", join},
-        {"cons", cons},
-        {"len", len},
-        {"init", init}
-    };
-
     unordered_map<string, function<lval*(lval*, lval*)>> operator_table = {
         {"+", add},
         {"-", substract},
@@ -75,17 +64,7 @@ namespace builtin {
         {"max", maximum}
     };
 
-    lval* handle(lval *a, const string &func) {
-        auto symbol_it = symbol_table.find(func);
-        if (symbol_it != symbol_table.end()) {
-            auto handler = symbol_it->second;
-            return handler(a);
-        } else {
-            return handle_op(a, func);
-        }
-    }
-
-    lval* handle_op(lval *a, const string &op) {
+    lval* handle_op(lenv *e, lval *a, const string &op) {
         for (auto cell: a->cells) {
             LASSERT(a, cell->type == lval_type::integer || cell->type == lval_type::decimal, lerr::cant_oper_non_num())
         }
@@ -199,7 +178,7 @@ namespace builtin {
         return min_max(std::greater_equal<double>(), x, y);
     }
 
-    lval* head(lval *a) {
+    lval* head(lenv *e, lval *a) {
         LASSERT_NUM_ARGS("head", a, 1)
 
         auto begin = a->cells.begin();
@@ -215,7 +194,7 @@ namespace builtin {
         return v;
     }
 
-    lval* tail(lval *a) {
+    lval* tail(lenv *e, lval *a) {
         LASSERT_NUM_ARGS("tail", a, 1)
 
         auto begin = a->cells.begin();
@@ -228,12 +207,12 @@ namespace builtin {
         return v;
     }
 
-    lval* list(lval *a) {
+    lval* list(lenv *e, lval *a) {
         a->type = lval_type::qexpr;
         return a;
     }
 
-    lval* eval(lval *a) {
+    lval* eval(lenv *e, lval *a) {
         LASSERT_NUM_ARGS("eval", a, 1)
         auto begin = a->cells.begin();
 
@@ -241,10 +220,10 @@ namespace builtin {
 
         auto x = lval::take(a, begin);
         x->type = lval_type::sexpr;
-        return lval::eval(x);
+        return lval::eval(e, x);
     }
 
-    lval* join(lval *a) {
+    lval* join(lenv *e, lval *a) {
         for (auto cell: a->cells) {
             LASSERT(a, cell->type == lval_type::qexpr, lerr::passed_incorrect_types("join"))
         }
@@ -258,7 +237,7 @@ namespace builtin {
         return x;
     }
 
-    lval* cons(lval *a) {
+    lval* cons(lenv *e, lval *a) {
         LASSERT_NUM_ARGS("cons", a, 2)
         auto it = a->cells.begin();
 
@@ -272,7 +251,7 @@ namespace builtin {
         return v;
     }
 
-    lval* len(lval *a) {
+    lval* len(lenv *e, lval *a) {
         LASSERT_NUM_ARGS("len", a, 1)
         auto begin = a->cells.begin();
 
@@ -284,7 +263,7 @@ namespace builtin {
         return length;
     }
 
-    lval* init(lval *a) {
+    lval* init(lenv *e, lval *a) {
         LASSERT_NUM_ARGS("init", a, 1)
         auto begin = a->cells.begin();
 

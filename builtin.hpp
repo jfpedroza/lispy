@@ -2,12 +2,14 @@
 #define LISPY_BUILTIN_HPP
 
 #include <string>
+#include <functional>
 
 struct lval;
+struct lenv;
 
 namespace builtin {
-    lval* handle(lval *args, const std::string &func);
-    lval* handle_op(lval *args, const std::string &op);
+    lval* handle_op(lenv *env, lval *args, const std::string &op);
+    std::function<lval*(lenv*, lval*)> ope(lenv *env, lval *args, const std::string &op);
 
     // Operators
     lval* add(lval *x, lval *y);
@@ -23,14 +25,14 @@ namespace builtin {
     lval* maximum(lval *x, lval *y);
 
     // Q-Expressions
-    lval* head(lval *args);
-    lval* tail(lval *args);
-    lval* list(lval *args);
-    lval* eval(lval *args);
-    lval* join(lval *args);
-    lval* cons(lval *args);
-    lval* len(lval *args);
-    lval* init(lval *args);
+    lval* head(lenv *env, lval *args);
+    lval* tail(lenv *env, lval *args);
+    lval* list(lenv *env, lval *args);
+    lval* eval(lenv *env, lval *args);
+    lval* join(lenv *env, lval *args);
+    lval* cons(lenv *env, lval *args);
+    lval* len(lenv *env, lval *args);
+    lval* init(lenv *env, lval *args);
 }
 
 #endif // LISPY_BUILTIN_HPP
