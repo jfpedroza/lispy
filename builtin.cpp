@@ -1,12 +1,14 @@
 #include <cstdlib>
 #include <unordered_map>
 #include <functional>
+#include <iostream>
 #include "builtin.hpp"
 #include "lval.hpp"
 #include "lval_error.hpp"
 #include "lenv.hpp"
 
 using std::string;
+using std::cout;
 
 #define LVAL_OPERATOR_BASE(X, Y, E1, E2, E3, E4) \
 switch (X->type) { \
@@ -92,6 +94,9 @@ namespace builtin {
 
         // Variable functions
         e->add_builtin("def", def);
+
+        // Debugging functions
+        e->add_builtin("printenv", print_env);
     }
 
     lbuiltin ope(const string &op) {
@@ -330,6 +335,19 @@ namespace builtin {
         for (auto sym_it = syms->cells.begin(); sym_it != syms->cells.end(); ++sym_it, ++val_it) {
             e->put((*sym_it)->sym, *val_it);
         }
+
+        delete a;
+        return lval::sexpr();
+    }
+
+    lval* print_env(lenv *e, lval *a) {
+        LASSERT_NUM_ARGS("init", a, 1)
+
+        for (auto entry: e->symbols) {
+            cout << entry.first << ": " << *entry.second << "\n";
+        }
+
+        cout << std::endl;
 
         delete a;
         return lval::sexpr();
