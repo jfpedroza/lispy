@@ -54,6 +54,9 @@ switch (X->type) { \
 #define LASSERT_TYPE(func, args, cell, expected) \
   LASSERT(a, (cell)->type == expected, lerr::passed_incorrect_type(func, (cell)->type, expected))
 
+#define LASSERT_NOT_EMPTY(func, args, cell) \
+  LASSERT(a, (cell)->cells.size() != 0, lerr::passed_nil_expr(func))
+
 namespace builtin {
 
     using std::unordered_map;
@@ -224,7 +227,7 @@ namespace builtin {
         auto begin = a->cells.begin();
 
         LASSERT_TYPE("head", a, *begin, lval_type::qexpr)
-        LASSERT(a, (*begin)->cells.size() != 0, lerr::passed_nil_expr("head"))
+        LASSERT_NOT_EMPTY("head", a, *begin)
 
         auto v = lval::take(a, begin);
         while (v->cells.size() > 1) {
@@ -240,7 +243,7 @@ namespace builtin {
         auto begin = a->cells.begin();
 
         LASSERT_TYPE("tail", a, *begin, lval_type::qexpr)
-        LASSERT(a, (*begin)->cells.size() != 0, lerr::passed_nil_expr("tail"))
+        LASSERT_NOT_EMPTY("tail", a, *begin)
 
         auto v = lval::take(a, begin);
         delete v->pop_first();
