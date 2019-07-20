@@ -51,6 +51,9 @@ switch (X->type) { \
 #define LASSERT_NUM_ARGS(func, args, num) \
   LASSERT(args, args->cells.size() == num, lerr::mismatched_num_args(func, args->cells.size(), num))
 
+#define LASSERT_TYPE(func, args, cell, expected) \
+  LASSERT(a, (cell)->type == expected, lerr::passed_incorrect_type(func, (cell)->type, expected))
+
 namespace builtin {
 
     using std::unordered_map;
@@ -220,7 +223,7 @@ namespace builtin {
 
         auto begin = a->cells.begin();
 
-        LASSERT(a, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_type("head", (*begin)->type, lval_type::qexpr))
+        LASSERT_TYPE("head", a, *begin, lval_type::qexpr)
         LASSERT(a, (*begin)->cells.size() != 0, lerr::passed_nil_expr("head"))
 
         auto v = lval::take(a, begin);
@@ -236,7 +239,7 @@ namespace builtin {
 
         auto begin = a->cells.begin();
 
-        LASSERT(a, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_type("tail", (*begin)->type, lval_type::qexpr))
+        LASSERT_TYPE("tail", a, *begin, lval_type::qexpr)
         LASSERT(a, (*begin)->cells.size() != 0, lerr::passed_nil_expr("tail"))
 
         auto v = lval::take(a, begin);
@@ -253,7 +256,7 @@ namespace builtin {
         LASSERT_NUM_ARGS("eval", a, 1)
         auto begin = a->cells.begin();
 
-        LASSERT(a, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_type("eval", (*begin)->type, lval_type::qexpr))
+        LASSERT_TYPE("eval", a, *begin, lval_type::qexpr)
 
         auto x = lval::take(a, begin);
         x->type = lval_type::sexpr;
@@ -262,7 +265,7 @@ namespace builtin {
 
     lval* join(lenv *e, lval *a) {
         for (auto cell: a->cells) {
-            LASSERT(a, cell->type == lval_type::qexpr, lerr::passed_incorrect_type("join", cell->type, lval_type::qexpr))
+            LASSERT_TYPE("join", a, cell, lval_type::qexpr)
         }
 
         auto x = a->pop_first();
@@ -276,9 +279,9 @@ namespace builtin {
 
     lval* cons(lenv *e, lval *a) {
         LASSERT_NUM_ARGS("cons", a, 2)
-        auto it = a->cells.begin();
+        auto it = ++a->cells.begin();
 
-        LASSERT(a, (*++it)->type == lval_type::qexpr, lerr::passed_incorrect_type("cons", (*it)->type, lval_type::qexpr))
+        LASSERT_TYPE("cons", a, *it, lval_type::qexpr)
 
         auto x = a->pop_first();
         auto v = a->pop_first();
@@ -292,7 +295,7 @@ namespace builtin {
         LASSERT_NUM_ARGS("len", a, 1)
         auto begin = a->cells.begin();
 
-        LASSERT(a, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_type("len", (*begin)->type, lval_type::qexpr))
+        LASSERT_TYPE("len", a, *begin, lval_type::qexpr)
 
         auto x = lval::take(a, begin);
         auto length = new lval((long)x->cells.size());
@@ -304,7 +307,7 @@ namespace builtin {
         LASSERT_NUM_ARGS("init", a, 1)
         auto begin = a->cells.begin();
 
-        LASSERT(a, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_type("init", (*begin)->type, lval_type::qexpr))
+        LASSERT_TYPE("init", a, *begin, lval_type::qexpr)
         LASSERT(a, (*begin)->cells.size() != 0, lerr::passed_nil_expr("init"))
 
         auto v = lval::take(a, begin);
@@ -317,7 +320,7 @@ namespace builtin {
     lval* def(lenv *e, lval *a) {
         auto begin = a->cells.begin();
 
-        LASSERT(a, (*begin)->type == lval_type::qexpr, lerr::passed_incorrect_type("def", (*begin)->type, lval_type::qexpr))
+        LASSERT_TYPE("def", a, *begin, lval_type::qexpr)
 
         auto syms = *begin;
         for (auto cell: syms->cells) {
