@@ -98,6 +98,8 @@ namespace builtin {
 
         // Variable functions
         e->add_builtin("def", def);
+        e->add_builtin("=", put);
+        e->add_builtin("\\", lambda);
     }
 
     lbuiltin ope(const string &op) {
@@ -320,24 +322,56 @@ namespace builtin {
         return v;
     }
 
-    lval* def(lenv *e, lval *a) {
+    lval* var(lenv *e, lval *a, const string &func) {
         auto begin = a->cells.begin();
 
-        LASSERT_TYPE("def", a, *begin, lval_type::qexpr)
+        LASSERT_TYPE(func, a, *begin, lval_type::qexpr)
 
         auto syms = *begin;
         for (auto cell: syms->cells) {
-            LASSERT(a, cell->type == lval_type::symbol, lerr::cant_define_non_sym("def"))
+            LASSERT(a, cell->type == lval_type::symbol, lerr::cant_define_non_sym(func, cell->type))
         }
 
-        LASSERT(a, syms->cells.size() == a->cells.size() - 1, lerr::cant_define_mismatched_values("def"));
+        LASSERT(a, syms->cells.size() == a->cells.size() - 1, lerr::cant_define_mismatched_values(func));
 
         auto val_it = ++begin;
         for (auto sym_it = syms->cells.begin(); sym_it != syms->cells.end(); ++sym_it, ++val_it) {
-            e->put((*sym_it)->sym, *val_it);
+            if (func == "def") {
+                e->def((*sym_it)->sym, *val_it);
+            } else if (func == "=") {
+                e->put((*sym_it)->sym, *val_it);
+            }
         }
 
         delete a;
         return lval::sexpr();
+    }
+
+    lval* def(lenv *e, lval *a) {
+        return var(e, a, "def");
+    }
+
+    lval* put(lenv *e, lval *a) {
+        return var(e, a, "=");
+    }
+
+    lval* lambda(lenv *e, lval *a) {
+        LASSERT_NUM_ARGS("\\", a, 2)
+        auto begin = a->cells.begin();
+
+        LASSERT_TYPE("\\", a, *begin, lval_type::qexpr)
+        ++begin;
+        LASSERT_TYPE("\\", a, *begin, lval_type::qexpr)
+
+        auto syms = a->cells.front();
+        for (auto cell: syms->cells) {
+            LASSERT(a, cell->type == lval_type::symbol, lerr::cant_define_non_sym("\\", cell->type))
+        }
+
+        auto formals = a->pop_first();
+        auto body = a->pop_first();
+        delete a;
+
+        return new lval(formals, body);
     }
 }

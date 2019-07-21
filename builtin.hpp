@@ -40,6 +40,8 @@ namespace builtin {
 
     // Variable functions
     lval* def(lenv *env, lval *args);
+    lval* put(lenv *env, lval *args);
+    lval* lambda(lenv *env, lval *args);
 }
 
 #endif // LISPY_BUILTIN_HPP
