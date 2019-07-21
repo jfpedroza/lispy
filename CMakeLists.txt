@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(Lispy VERSION 0.0.7)
+project(Lispy VERSION 0.0.8)
 
 include(CTest)
 enable_testing()
