@@ -58,5 +58,9 @@ namespace lerr {
     string cant_define_mismatched_values(const string &func) {
         return "Function '" + func + "' cannot define incorrect number of values to symbols";
     }
+
+    string function_format_invalid() {
+        return "Function format invalid. Symbol '&' not followed by single symbol.";
+    }
 }
 

@@ -148,6 +148,20 @@ lval* lval::call(lenv *e, lval *a) {
         }
 
         auto sym = formals->pop_first();
+
+        if (sym->sym == "&") {
+            if (formals->cells.size() != 1) {
+                delete a;
+                return error(lerr::function_format_invalid());
+            }
+
+            auto nsym = formals->pop_first();
+            env->put(nsym->sym, builtin::list(e, a));
+            delete sym;
+            delete nsym;
+            break;
+        }
+
         auto val = a->pop_first();
         env->put(sym->sym, val);
         delete sym;
@@ -155,6 +169,19 @@ lval* lval::call(lenv *e, lval *a) {
     }
 
     delete a;
+
+    if (!formals->cells.empty() && formals->cells.front()->sym == "&") {
+        if (formals->cells.size() != 2) {
+            return error(lerr::function_format_invalid());
+        }
+
+        delete formals->pop_first();
+        auto sym = formals->pop_first();
+        auto val = lval::qexpr();
+        env->put(sym->sym, val);
+        delete sym;
+        delete val;
+    }
 
     if (formals->cells.empty()) {
         env->parent = e;
@@ -244,9 +271,10 @@ lval* lval::eval_sexpr(lenv *e, lval *v) {
 
     auto f = v->pop_first();
     if (f->type != lval_type::func) {
+        auto type = f->type;
         delete f;
         delete v;
-        return error(lerr::sexpr_not_function(f->type));
+        return error(lerr::sexpr_not_function(type));
     }
 
     auto result = f->call(e, v);
