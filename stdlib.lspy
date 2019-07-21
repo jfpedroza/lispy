@@ -1,0 +1,11 @@
+def {fun} (\ {args body} {def (head args) (\ (tail args) body)})
+fun {unpack f xs} {eval (cons f xs)}
+fun {pack f & xs} {f xs}
+def {uncurry} pack
+def {curry} unpack
+fun {fst xs} {eval (head xs)}
+fun {snd xs} {fst (tail xs)}
+fun {flip f x y & xs} {unpack f (join {y x} xs)}
+fun {comp f g x & xs} {f (unpack g (cons x xs))}
+def {sum} (unpack +)
+def {product} (unpack *)
