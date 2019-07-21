@@ -118,6 +118,23 @@ lval::~lval() {
     }
 }
 
+bool lval::is_number() const {
+    switch (this->type) {
+        case lval_type::integer: return true;
+        case lval_type::decimal: return true;
+        default: return false;
+    }
+}
+
+double lval::get_number() const {
+    switch (this->type) {
+        case lval_type::integer: return this->integ;
+        case lval_type::decimal: return this->dec;
+        default:
+            return std::numeric_limits<double>::max();
+    }
+}
+
 lval* lval::pop(const iter &it) {
     auto x = *it;
     cells.erase(it);
@@ -187,8 +204,7 @@ lval* lval::call(lenv *e, lval *a) {
         env->parent = e;
 
         auto v = new lval(body);
-        v->type = lval_type::sexpr;
-        return eval(env, v);
+        return eval_qexpr(env, v);
     } else {
         return new lval(this);
     }
@@ -283,6 +299,11 @@ lval* lval::eval_sexpr(lenv *e, lval *v) {
     return result;
 }
 
+lval* lval::eval_qexpr(lenv *e, lval *v) {
+    v->type = lval_type::sexpr;
+    return eval_sexpr(e, v);
+}
+
 ostream& lval::print_expr(ostream &os, char open, char close) const {
     os << open;
 
@@ -324,4 +345,58 @@ ostream& operator<<(ostream &os, const lval &value) {
     }
 
     return os;
+}
+
+bool lval::operator==(const lval &other) const {
+    if (this->is_number() && other.is_number()) {
+        switch (this->type) {
+            case lval_type::decimal:
+                switch (other.type) {
+                    case lval_type::decimal: return this->dec == other.dec;
+                    case lval_type::integer: return this->dec == other.integ;
+                    default: return false;
+                }
+            case lval_type::integer:
+                switch (other.type) {
+                    case lval_type::decimal: return this->integ == other.dec;
+                    case lval_type::integer: return this->integ == other.integ;
+                    default: return false;
+                }
+            default: return false;
+        }
+    }
+
+    if (this->type != other.type) return false;
+
+    switch (this->type) {
+        case lval_type::error: return this->err == other.err;
+        case lval_type::symbol: return this->sym == other.sym;
+
+        case lval_type::func:
+            if (this->builtin && other.builtin) {
+                auto a = this->builtin.target<lval*(*)(lenv*, lval*)>();
+                auto b = other.builtin.target<lval*(*)(lenv*, lval*)>();
+                return *a == *b;
+            } else if (!this->builtin && !other.builtin) {
+                return *this->formals == *other.formals && *this->body == *other.body;
+            } else {
+                return false;
+            }
+
+        case lval_type::sexpr:
+        case lval_type::qexpr:
+            if (this->cells.size() != other.cells.size()) return false;
+
+            return std::equal(
+                this->cells.begin(),
+                this->cells.end(),
+                other.cells.begin(),
+                [](auto a, auto b) {return *a == *b;});
+
+        default: return false;
+    }
+}
+
+bool lval::operator!=(const lval &other) const {
+    return !(*this == other);
 }

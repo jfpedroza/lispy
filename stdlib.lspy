@@ -9,3 +9,12 @@ fun {flip f x y & xs} {unpack f (join {y x} xs)}
 fun {comp f g x & xs} {f (unpack g (cons x xs))}
 def {sum} (unpack +)
 def {product} (unpack *)
+fun {reverse l} { if (== l {}) {{}} {join (reverse (tail l)) (head l)} }
+def {true} 1
+def {false} 0
+fun {nth n l} { if (== n 0) {fst l} {nth (- n 1) (tail l)} }
+fun {member e l} { if (== l {}) {false} { if (== e (fst l)) {true} { member e (tail l) } } }
+fun {last l} { if (== (tail l) {}) {fst l} { last (tail l) } }
+fun {and x y} { if x {y} {false} }
+fun {or x y} { if x {true} {y} }
+fun {not x} { == x false }

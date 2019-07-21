@@ -65,6 +65,9 @@ struct lval {
 
     ~lval();
 
+    bool is_number() const;
+    double get_number() const;
+
     lval* pop(const iter &it);
 
     lval* pop(size_t i);
@@ -89,9 +92,14 @@ struct lval {
 
     static lval* eval_sexpr(lenv *e, lval *v);
 
+    static lval* eval_qexpr(lenv *e, lval *v);
+
     friend std::ostream& operator<<(std::ostream &os, const lval &value);
 
     std::ostream& print_expr(std::ostream &os, char open, char close) const;
+
+    bool operator==(const lval &other) const;
+    bool operator!=(const lval &other) const;
 };
 
 #endif // LVAL_HPP

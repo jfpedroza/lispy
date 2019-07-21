@@ -25,21 +25,41 @@ switch (X->type) { \
         default: return X; \
 }
 
-#define LVAL_OPERATOR(OP) \
-    LVAL_OPERATOR_BASE(x, y, \
-            x->dec OP y->dec; return x, \
-            x->dec OP y->integ; return x, \
-            x->type = lval_type::decimal; x->dec = x->integ; x->dec OP y->dec; return x, \
-            x->integ OP y->integ; return x \
-        )
+#define LVAL_OPERATOR(OP, X, Y) \
+    LVAL_OPERATOR_BASE(X, Y, \
+        X->dec OP Y->dec; return X, \
+        X->dec OP Y->integ; return X, \
+        X->type = lval_type::decimal; X->dec = X->integ; X->dec OP Y->dec; return X, \
+        X->integ OP Y->integ; return X \
+    )
 
-#define LVAL_BINARY_HANDLER(HANDLER) \
-    LVAL_OPERATOR_BASE(x, y, \
-            x->dec = HANDLER(x->dec, y->dec); return x, \
-            x->dec = HANDLER(x->dec, y->integ); return x, \
-            x->type = lval_type::decimal; x->dec = HANDLER(x->integ, y->dec); return x, \
-            x->integ = HANDLER(x->integ, y->integ); return x \
-            )
+#define LVAL_BINARY_HANDLER(HANDLER, X, Y) \
+    LVAL_OPERATOR_BASE(X, Y, \
+        X->dec = HANDLER(X->dec, Y->dec); return X, \
+        X->dec = HANDLER(X->dec, Y->integ); return X, \
+        X->type = lval_type::decimal; X->dec = HANDLER(X->integ, Y->dec); return X, \
+        X->integ = HANDLER(X->integ, Y->integ); return X \
+    )
+
+#define LVAL_COMPARISON(OP, X, Y, A, B) \
+    comp = [X, Y]() { \
+        auto a = X->A; \
+        auto b = Y->B; \
+        delete X; \
+        delete Y; \
+        return new lval(a OP b ? 1L : 0L); \
+    }; \
+ \
+   return comp();
+
+#define LVAL_COMP_OPERATOR(OP, X, Y) \
+    function<lval*()> comp; \
+    LVAL_OPERATOR_BASE(X, Y, \
+        LVAL_COMPARISON(OP, X, Y, dec, dec), \
+        LVAL_COMPARISON(OP, X, Y, dec, integ), \
+        LVAL_COMPARISON(OP, X, Y, integ, dec), \
+        LVAL_COMPARISON(OP, X, Y, integ, integ) \
+    )
 
 #define LASSERT(args, cond, err) \
   if (!(cond)) { \
@@ -52,10 +72,14 @@ switch (X->type) { \
   LASSERT(args, args->cells.size() == num, lerr::mismatched_num_args(func, args->cells.size(), num))
 
 #define LASSERT_TYPE(func, args, cell, expected) \
-  LASSERT(a, (cell)->type == expected, lerr::passed_incorrect_type(func, (cell)->type, expected))
+  LASSERT(args, (cell)->type == expected, lerr::passed_incorrect_type(func, (cell)->type, expected))
 
 #define LASSERT_NOT_EMPTY(func, args, cell) \
-  LASSERT(a, (cell)->cells.size() != 0, lerr::passed_nil_expr(func))
+  LASSERT(args, (cell)->cells.size() != 0, lerr::passed_nil_expr(func))
+
+#define LASSERT_NUMBER(func, args, cell) \
+    LASSERT(args, (cell)->type == lval_type::integer || (cell)->type == lval_type::decimal, \
+        lerr::passed_incorrect_type(func, (cell)->type, lval_type::number))
 
 namespace builtin {
 
@@ -76,6 +100,12 @@ namespace builtin {
     };
 
     void add_builtins(lenv *e) {
+
+        // Variable functions
+        e->add_builtin("def", def);
+        e->add_builtin("=", put);
+        e->add_builtin("\\", lambda);
+
         // Math functions
         e->add_builtin("+", ope("+"));
         e->add_builtin("-", ope("-"));
@@ -86,6 +116,15 @@ namespace builtin {
         e->add_builtin("min", ope("min"));
         e->add_builtin("max", ope("max"));
 
+        // Comparison functions
+        e->add_builtin("==", equals);
+        e->add_builtin("!=", not_equals);
+        e->add_builtin(">", ordering_op(">"));
+        e->add_builtin("<", ordering_op("<"));
+        e->add_builtin(">=", ordering_op(">="));
+        e->add_builtin("<=", ordering_op("<="));
+        e->add_builtin("if", if_);
+
         // List Functions
         e->add_builtin("head", head);
         e->add_builtin("tail", tail);
@@ -95,11 +134,6 @@ namespace builtin {
         e->add_builtin("cons", cons);
         e->add_builtin("len", len);
         e->add_builtin("init", init);
-
-        // Variable functions
-        e->add_builtin("def", def);
-        e->add_builtin("=", put);
-        e->add_builtin("\\", lambda);
     }
 
     lbuiltin ope(const string &op) {
@@ -109,9 +143,7 @@ namespace builtin {
 
     lval* handle_op(lenv *e, lval *a, const string &op) {
         for (auto cell: a->cells) {
-            LASSERT(a,
-                cell->type == lval_type::integer || cell->type == lval_type::decimal,
-                lerr::passed_incorrect_type(op, cell->type, lval_type::number))
+            LASSERT_NUMBER(op, a, cell)
         }
 
         auto x = a->pop_first();
@@ -120,10 +152,6 @@ namespace builtin {
         }
 
         auto op_it = operator_table.find(op);
-        if (op_it == operator_table.end()) {
-            return error(lerr::unknown_sym(op));
-        }
-
         auto handler = op_it->second;
 
         while(!a->cells.empty()) {
@@ -139,15 +167,15 @@ namespace builtin {
     }
 
     lval* add(lval *x, lval *y) {
-        LVAL_OPERATOR(+=)
+        LVAL_OPERATOR(+=, x, y)
     }
 
     lval* substract(lval *x, lval *y) {
-        LVAL_OPERATOR(-=)
+        LVAL_OPERATOR(-=, x, y)
     }
 
     lval* multiply(lval *x, lval *y) {
-        LVAL_OPERATOR(*=)
+        LVAL_OPERATOR(*=, x, y)
     }
 
     lval* err_div_zero(lval *x) {
@@ -186,7 +214,7 @@ namespace builtin {
     }
 
     lval* power(lval *x, lval *y) {
-        LVAL_BINARY_HANDLER(pow)
+        LVAL_BINARY_HANDLER(pow, x, y)
     }
 
     lval* negate(lval *x) {
@@ -221,6 +249,74 @@ namespace builtin {
 
     lval* maximum(lval *x, lval *y) {
         return min_max(std::greater_equal<double>(), x, y);
+    }
+
+    lbuiltin ordering_op(const string &op) {
+        using namespace std::placeholders;
+        return std::bind(ord, _1, _2, op);
+    }
+
+    lval* ord(lenv *e, lval *a, const std::string &op) {
+        LASSERT_NUM_ARGS(op, a, 2)
+        auto begin = a->cells.begin();
+
+        LASSERT_NUMBER(op, a, *begin)
+        ++begin;
+        LASSERT_NUMBER(op, a, *begin)
+
+        auto x = a->pop_first();
+        auto y = a->pop_first();
+        delete a;
+
+        if (op == "==") { LVAL_COMP_OPERATOR(==, x, y) }
+        else if (op == "!=") { LVAL_COMP_OPERATOR(!=, x, y) }
+        else if (op == ">") { LVAL_COMP_OPERATOR(>, x, y) }
+        else if (op == "<") { LVAL_COMP_OPERATOR(<, x, y) }
+        else if (op == ">=") { LVAL_COMP_OPERATOR(>=, x, y) }
+        else if (op == "<=") { LVAL_COMP_OPERATOR(<=, x, y) }
+
+        return error("Fatal! Weird operator '" + op + "' in ord");
+    }
+
+    lval* cmp(lenv *e, lval *a, const std::string &op) {
+        LASSERT_NUM_ARGS(op, a, 2)
+        auto begin = a->cells.begin();
+
+        auto x = *begin++;
+        auto y = *begin;
+
+        bool result = false;
+
+        if (op == "==") result = *x == *y;
+        else if (op == "!=") result = *x != *y;
+        delete a;
+
+        return new lval(result ? 1L : 0L);
+    }
+
+    lval* equals(lenv *e, lval *a) {
+        return cmp(e, a, "==");
+    }
+
+    lval* not_equals(lenv *e, lval *a) {
+        return cmp(e, a, "!=");
+    }
+
+    lval* if_(lenv *e, lval *a) {
+        LASSERT_NUM_ARGS("if", a, 3)
+        auto begin = a->cells.begin();
+
+        LASSERT_NUMBER("if", a, *begin)
+        ++begin;
+        LASSERT_TYPE("if", a, *begin, lval_type::qexpr)
+        ++begin;
+        LASSERT_TYPE("if", a, *begin, lval_type::qexpr)
+
+        auto cond = a->pop_first();
+        double cond_value = cond->get_number();
+        delete cond;
+        auto result = lval::take(a, cond_value != 0 ? 0 : 1);
+        return lval::eval_qexpr(e, result);
     }
 
     lval* head(lenv *e, lval *a) {
@@ -264,8 +360,7 @@ namespace builtin {
         LASSERT_TYPE("eval", a, *begin, lval_type::qexpr)
 
         auto x = lval::take(a, begin);
-        x->type = lval_type::sexpr;
-        return lval::eval(e, x);
+        return lval::eval_qexpr(e, x);
     }
 
     lval* join(lenv *e, lval *a) {
