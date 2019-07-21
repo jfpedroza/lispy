@@ -24,11 +24,16 @@ struct lenv;
 
 struct lval {
     lval_type type;
+
     long integ;
     double dec;
     std::string err;
     std::string sym;
-    lbuiltin fun;
+
+    lbuiltin builtin;
+    lenv *env;
+    lval *formals;
+    lval *body;
 
     using cell_type = std::list<lval*>;
 
@@ -45,6 +50,8 @@ struct lval {
     explicit lval(std::string sym);
 
     lval(lbuiltin fun);
+
+    lval(lval *formals, lval *body);
 
     lval(const lval &other);
 
@@ -63,6 +70,8 @@ struct lval {
     lval* pop(size_t i);
 
     lval* pop_first();
+
+    lval* call(lenv *e, lval *a);
 
     static lval* take(lval *v, const iter &it);
 

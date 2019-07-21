@@ -52,7 +52,15 @@ lval::lval(string sym) {
 
 lval::lval(lbuiltin fun) {
     this->type = lval_type::func;
-    this->fun = fun;
+    this->builtin = fun;
+}
+
+lval::lval(lval *formals, lval *body) {
+    this->type = lval_type::func;
+    this->builtin = nullptr;
+    this->formals = formals;
+    this->body = body;
+    this->env = new lenv();
 }
 
 lval::lval(const lval &other) {
@@ -62,7 +70,16 @@ lval::lval(const lval &other) {
         case lval_type::decimal: this->dec = other.dec; break;
         case lval_type::error: this->err = other.err; break;
         case lval_type::symbol: this->sym = other.sym; break;
-        case lval_type::func: this->fun = other.fun; break;
+        case lval_type::func:
+            if (other.builtin) {
+                this->builtin = other.builtin;
+            } else {
+                this->builtin = nullptr;
+                this->env = new lenv(other.env);
+                this->formals = new lval(other.formals);
+                this->body = new lval(other.body);
+            }
+            break;
         case lval_type::sexpr:
         case lval_type::qexpr:
             this->cells = cell_type(other.cells.size(), nullptr);
@@ -93,6 +110,12 @@ lval::~lval() {
     for(auto cell: cells) {
         delete cell;
     }
+
+    if (type == lval_type::func && !builtin) {
+        delete formals;
+        delete body;
+        delete env;
+    }
 }
 
 lval* lval::pop(const iter &it) {
@@ -110,6 +133,65 @@ lval* lval::pop(size_t i) {
 
 lval* lval::pop_first() {
     return pop(cells.begin());
+}
+
+lval* lval::call(lenv *e, lval *a) {
+    if (builtin) return builtin(e, a);
+
+    auto given = a->cells.size();
+    auto total = formals->cells.size();
+
+    while(!a->cells.empty()) {
+        if (formals->cells.empty()) {
+            delete a;
+            return error(lerr::too_many_args(given, total));
+        }
+
+        auto sym = formals->pop_first();
+
+        if (sym->sym == "&") {
+            if (formals->cells.size() != 1) {
+                delete a;
+                return error(lerr::function_format_invalid());
+            }
+
+            auto nsym = formals->pop_first();
+            env->put(nsym->sym, builtin::list(e, a));
+            delete sym;
+            delete nsym;
+            break;
+        }
+
+        auto val = a->pop_first();
+        env->put(sym->sym, val);
+        delete sym;
+        delete val;
+    }
+
+    delete a;
+
+    if (!formals->cells.empty() && formals->cells.front()->sym == "&") {
+        if (formals->cells.size() != 2) {
+            return error(lerr::function_format_invalid());
+        }
+
+        delete formals->pop_first();
+        auto sym = formals->pop_first();
+        auto val = lval::qexpr();
+        env->put(sym->sym, val);
+        delete sym;
+        delete val;
+    }
+
+    if (formals->cells.empty()) {
+        env->parent = e;
+
+        auto v = new lval(body);
+        v->type = lval_type::sexpr;
+        return eval(env, v);
+    } else {
+        return new lval(this);
+    }
 }
 
 lval* lval::take(lval *v, const iter &it) {
@@ -189,12 +271,13 @@ lval* lval::eval_sexpr(lenv *e, lval *v) {
 
     auto f = v->pop_first();
     if (f->type != lval_type::func) {
+        auto type = f->type;
         delete f;
         delete v;
-        return error(lerr::sexpr_not_function());
+        return error(lerr::sexpr_not_function(type));
     }
 
-    auto result = f->fun(e, v);
+    auto result = f->call(e, v);
     delete f;
 
     return result;
@@ -224,8 +307,12 @@ ostream& operator<<(ostream &os, const lval &value) {
             return os << value.sym;
 
         case lval_type::func:
-            return os << "<function>";
-
+            if (value.builtin) {
+                return os << "<builtin>";
+            } else {
+                os << "(\\ " << *value.formals << ' ' << *value.body << ')';
+            }
+            break;
         case lval_type::error:
             return os << "Error: " << value.err;
 
