@@ -11,6 +11,7 @@ enum class lval_type {
     integer,
     decimal,
     number,
+    boolean,
     symbol,
     func,
     sexpr,
@@ -27,6 +28,7 @@ struct lval {
 
     long integ;
     double dec;
+    bool boolean;
     std::string err;
     std::string sym;
 
@@ -46,6 +48,8 @@ struct lval {
     lval(long num);
 
     lval(double num);
+
+    lval(bool boolean);
 
     explicit lval(std::string sym);
 

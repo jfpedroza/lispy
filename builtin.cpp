@@ -47,7 +47,7 @@ switch (X->type) { \
         auto b = Y->B; \
         delete X; \
         delete Y; \
-        return new lval(a OP b ? 1L : 0L); \
+        return new lval(a OP b); \
     }; \
  \
    return comp();
@@ -134,6 +134,14 @@ namespace builtin {
         e->add_builtin("cons", cons);
         e->add_builtin("len", len);
         e->add_builtin("init", init);
+
+        // Atoms
+        lval *True = new lval(true);
+        lval *False = new lval(false);
+        e->def("true", True);
+        e->def("false", False);
+        delete True;
+        delete False;
     }
 
     lbuiltin ope(const string &op) {
@@ -291,7 +299,7 @@ namespace builtin {
         else if (op == "!=") result = *x != *y;
         delete a;
 
-        return new lval(result ? 1L : 0L);
+        return new lval(result);
     }
 
     lval* equals(lenv *e, lval *a) {
@@ -306,16 +314,16 @@ namespace builtin {
         LASSERT_NUM_ARGS("if", a, 3)
         auto begin = a->cells.begin();
 
-        LASSERT_NUMBER("if", a, *begin)
+        LASSERT_TYPE("if", a, *begin, lval_type::boolean)
         ++begin;
         LASSERT_TYPE("if", a, *begin, lval_type::qexpr)
         ++begin;
         LASSERT_TYPE("if", a, *begin, lval_type::qexpr)
 
         auto cond = a->pop_first();
-        double cond_value = cond->get_number();
+        bool boolean = cond->boolean;
         delete cond;
-        auto result = lval::take(a, cond_value != 0 ? 0 : 1);
+        auto result = lval::take(a, boolean ? 0 : 1);
         return lval::eval_qexpr(e, result);
     }
 

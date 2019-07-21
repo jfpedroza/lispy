@@ -15,6 +15,7 @@ ostream& operator<<(ostream &os, const lval_type &type) {
         case lval_type::integer: return os << "Integer";
         case lval_type::decimal: return os << "Decimal";
         case lval_type::number: return os << "Number";
+        case lval_type::boolean: return os << "Boolean";
         case lval_type::error: return os << "Error";
         case lval_type::symbol: return os << "Symbol";
         case lval_type::func: return os << "Function";
@@ -45,6 +46,11 @@ lval::lval(double num) {
     this->dec = num;
 }
 
+lval::lval(bool boolean) {
+    this->type = lval_type::boolean;
+    this->boolean = boolean;
+}
+
 lval::lval(string sym) {
     this->type = lval_type::symbol;
     this->sym = sym;
@@ -68,6 +74,7 @@ lval::lval(const lval &other) {
     switch (this->type) {
         case lval_type::integer: this->integ = other.integ; break;
         case lval_type::decimal: this->dec = other.dec; break;
+        case lval_type::boolean: this->boolean = other.boolean; break;
         case lval_type::error: this->err = other.err; break;
         case lval_type::symbol: this->sym = other.sym; break;
         case lval_type::func:
@@ -243,7 +250,7 @@ lval* lval::read_decimal(mpc_ast_t *t) {
 lval* lval::read(mpc_ast_t *t) {
     if (strstr(t->tag, "integer")) return read_integer(t);
     if (strstr(t->tag, "decimal")) return read_decimal(t);
-    if (strstr(t->tag, "symbol")) return new lval(t->contents);
+    if (strstr(t->tag, "symbol")) return new lval(string(t->contents));
 
     lval *x = nullptr;
     if (strcmp(t->tag, ">") == 0 || strstr(t->tag, "sexpr")) {
@@ -324,6 +331,9 @@ ostream& operator<<(ostream &os, const lval &value) {
         case lval_type::decimal:
             return os << value.dec;
 
+        case lval_type::boolean:
+            return os << (value.boolean ? "true" : "false");
+
         case lval_type::symbol:
             return os << value.sym;
 
@@ -369,6 +379,7 @@ bool lval::operator==(const lval &other) const {
     if (this->type != other.type) return false;
 
     switch (this->type) {
+        case lval_type::boolean: return this->boolean == other.boolean;
         case lval_type::error: return this->err == other.err;
         case lval_type::symbol: return this->sym == other.sym;
 
