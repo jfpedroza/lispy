@@ -13,6 +13,7 @@ enum class lval_type {
     number,
     boolean,
     symbol,
+    string,
     func,
     sexpr,
     qexpr,
@@ -31,6 +32,7 @@ struct lval {
     bool boolean;
     std::string err;
     std::string sym;
+    std::string str;
 
     lbuiltin builtin;
     lenv *env;
@@ -51,7 +53,7 @@ struct lval {
 
     lval(bool boolean);
 
-    explicit lval(std::string sym);
+    explicit lval(std::string str);
 
     lval(lbuiltin fun);
 
@@ -61,11 +63,17 @@ struct lval {
 
     lval(const lval *const other);
 
+    static lval* symbol(std::string err);
+
     static lval* error(std::string err);
 
     static lval* sexpr();
 
+    static lval* sexpr(std::initializer_list<lval*> cells);
+
     static lval* qexpr();
+
+    static lval* qexpr(std::initializer_list<lval*> cells);
 
     ~lval();
 
@@ -90,6 +98,8 @@ struct lval {
 
     static lval* read_decimal(mpc_ast_t *t);
 
+    static lval* read_string(mpc_ast_t *t);
+
     static lval* read(mpc_ast_t *t);
 
     static lval* eval(lenv *e, lval *v);
@@ -101,9 +111,22 @@ struct lval {
     friend std::ostream& operator<<(std::ostream &os, const lval &value);
 
     std::ostream& print_expr(std::ostream &os, char open, char close) const;
+    std::ostream& print_str(std::ostream &os) const;
 
     bool operator==(const lval &other) const;
     bool operator!=(const lval &other) const;
 };
+
+/* Create some parsers */
+extern mpc_parser_t* Integer;
+extern mpc_parser_t* Decimal;
+extern mpc_parser_t* Number;
+extern mpc_parser_t* Symbol;
+extern mpc_parser_t* String;
+extern mpc_parser_t* Sexpr;
+extern mpc_parser_t* Qexpr;
+extern mpc_parser_t* Expr;
+extern mpc_parser_t* Comment;
+extern mpc_parser_t* Lispy;
 
 #endif // LVAL_HPP

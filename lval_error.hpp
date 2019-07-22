@@ -17,6 +17,7 @@ namespace lerr {
     std::string cant_define_non_sym(const std::string &func, lval_type got);
     std::string cant_define_mismatched_values(const std::string &func);
     std::string function_format_invalid();
+    std::string could_not_load_library(const std::string &msg);
 }
 
 #endif // LVAL_ERROR_HPP

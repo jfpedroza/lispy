@@ -18,6 +18,7 @@ ostream& operator<<(ostream &os, const lval_type &type) {
         case lval_type::boolean: return os << "Boolean";
         case lval_type::error: return os << "Error";
         case lval_type::symbol: return os << "Symbol";
+        case lval_type::string: return os << "String";
         case lval_type::func: return os << "Function";
         case lval_type::sexpr: return os << "S-Expression";
         case lval_type::qexpr: return os << "Q-Expression";
@@ -51,9 +52,9 @@ lval::lval(bool boolean) {
     this->boolean = boolean;
 }
 
-lval::lval(string sym) {
-    this->type = lval_type::symbol;
-    this->sym = sym;
+lval::lval(string str) {
+    this->type = lval_type::string;
+    this->str = str;
 }
 
 lval::lval(lbuiltin fun) {
@@ -77,6 +78,7 @@ lval::lval(const lval &other) {
         case lval_type::boolean: this->boolean = other.boolean; break;
         case lval_type::error: this->err = other.err; break;
         case lval_type::symbol: this->sym = other.sym; break;
+        case lval_type::string: this->str = other.str; break;
         case lval_type::func:
             if (other.builtin) {
                 this->builtin = other.builtin;
@@ -97,6 +99,12 @@ lval::lval(const lval &other) {
 
 lval::lval(const lval *const other): lval(*other) {}
 
+lval* lval::symbol(string sym) {
+    auto val = new lval(lval_type::symbol);
+    val->sym = sym;
+    return val;
+}
+
 lval* lval::error(string err) {
     auto val = new lval(lval_type::error);
     val->err = err;
@@ -108,8 +116,20 @@ lval* lval::sexpr() {
     return val;
 }
 
+lval* lval::sexpr(std::initializer_list<lval*> cells) {
+    auto val = sexpr();
+    val->cells = cells;
+    return val;
+}
+
 lval* lval::qexpr() {
     auto val = new lval(lval_type::qexpr);
+    return val;
+}
+
+lval* lval::qexpr(std::initializer_list<lval*> cells) {
+    auto val = qexpr();
+    val->cells = cells;
     return val;
 }
 
@@ -247,10 +267,21 @@ lval* lval::read_decimal(mpc_ast_t *t) {
         new lval(x) : error(lerr::bad_num());
 }
 
+lval* lval::read_string(mpc_ast_t *t) {
+    t->contents[strlen(t->contents)-1] = '\0';
+    char *unescaped = (char*)malloc(strlen(t->contents+1)+1);
+    strcpy(unescaped, t->contents+1);
+    unescaped = (char*)mpcf_unescape(unescaped);
+    auto str = new lval(string(unescaped));
+    free(unescaped);
+    return str;
+}
+
 lval* lval::read(mpc_ast_t *t) {
     if (strstr(t->tag, "integer")) return read_integer(t);
     if (strstr(t->tag, "decimal")) return read_decimal(t);
-    if (strstr(t->tag, "symbol")) return new lval(string(t->contents));
+    if (strstr(t->tag, "string")) return read_string(t);
+    if (strstr(t->tag, "symbol")) return lval::symbol(t->contents);
 
     lval *x = nullptr;
     if (strcmp(t->tag, ">") == 0 || strstr(t->tag, "sexpr")) {
@@ -262,6 +293,7 @@ lval* lval::read(mpc_ast_t *t) {
     for (int i = 0; i < t->children_num; i++) {
         if (should_skip_child(t->children[i])) continue;
         if (strcmp(t->children[i]->tag,  "regex") == 0) continue;
+        if (strstr(t->children[i]->tag,  "comment")) continue;
 
         x->cells.push_back(read(t->children[i]));
     }
@@ -323,6 +355,16 @@ ostream& lval::print_expr(ostream &os, char open, char close) const {
     return os << close;
 }
 
+ostream& lval::print_str(ostream &os) const {
+    auto s = str.c_str();
+    char *escaped = (char*)malloc(str.size() + 1);
+    strcpy(escaped, s);
+    escaped = (char*)mpcf_escape(escaped);
+    os << '\"' << escaped << '\"';
+    free(escaped);
+    return os;
+}
+
 ostream& operator<<(ostream &os, const lval &value) {
     switch (value.type) {
         case lval_type::integer:
@@ -336,6 +378,9 @@ ostream& operator<<(ostream &os, const lval &value) {
 
         case lval_type::symbol:
             return os << value.sym;
+
+        case lval_type::string:
+            return value.print_str(os);
 
         case lval_type::func:
             if (value.builtin) {
@@ -382,6 +427,7 @@ bool lval::operator==(const lval &other) const {
         case lval_type::boolean: return this->boolean == other.boolean;
         case lval_type::error: return this->err == other.err;
         case lval_type::symbol: return this->sym == other.sym;
+        case lval_type::string: return this->str == other.str;
 
         case lval_type::func:
             if (this->builtin && other.builtin) {

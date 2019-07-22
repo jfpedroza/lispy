@@ -62,5 +62,9 @@ namespace lerr {
     string function_format_invalid() {
         return "Function format invalid. Symbol '&' not followed by single symbol.";
     }
+
+    string could_not_load_library(const string &msg) {
+        return "Cound not load library: " + msg;
+    }
 }
 

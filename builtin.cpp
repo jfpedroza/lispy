@@ -1,12 +1,15 @@
 #include <cstdlib>
 #include <unordered_map>
 #include <functional>
+#include <iostream>
 #include "builtin.hpp"
 #include "lval.hpp"
 #include "lval_error.hpp"
 #include "lenv.hpp"
 
 using std::string;
+using std::cout;
+using std::endl;
 
 #define LVAL_OPERATOR_BASE(X, Y, E1, E2, E3, E4) \
 switch (X->type) { \
@@ -134,6 +137,11 @@ namespace builtin {
         e->add_builtin("cons", cons);
         e->add_builtin("len", len);
         e->add_builtin("init", init);
+
+        // String functions
+        e->add_builtin("load", load);
+        e->add_builtin("print", print);
+        e->add_builtin("error", make_error);
 
         // Atoms
         lval *True = new lval(true);
@@ -476,5 +484,64 @@ namespace builtin {
         delete a;
 
         return new lval(formals, body);
+    }
+
+    lval* load(lenv *e, lval *a) {
+        LASSERT_NUM_ARGS("load", a, 1)
+        auto begin = a->cells.begin();
+
+        LASSERT_TYPE("load", a, *begin, lval_type::string)
+
+        mpc_result_t r;
+        if (mpc_parse_contents((*begin)->str.c_str(), Lispy, &r)) {
+
+            lval *expr = lval::read((mpc_ast_t*)r.output);
+            mpc_ast_delete((mpc_ast_t*)r.output);
+            while (!expr->cells.empty()) {
+                auto x = lval::eval(e, expr->pop_first());
+                if (x->type == lval_type::error) {
+                    cout << *x << endl;
+                }
+
+                delete x;
+            }
+
+            delete expr;
+            delete a;
+
+            return lval::sexpr();
+        } else {
+            char* err_msg = mpc_err_string(r.error);
+            mpc_err_delete(r.error);
+
+            auto err = error(lerr::could_not_load_library(err_msg));
+            free(err_msg);
+            delete a;
+
+            delete err;
+        }
+    }
+
+    lval* print(lenv *e, lval *a) {
+        for (auto cell: a->cells) {
+            cout << *cell << ' ';
+        }
+
+        cout << endl;
+        delete a;
+
+        return lval::sexpr();
+    }
+
+    lval* make_error(lenv *e, lval *a) {
+        LASSERT_NUM_ARGS("errror", a, 1)
+        auto begin = a->cells.begin();
+
+        LASSERT_TYPE("error", a, *begin, lval_type::string)
+
+        lval *err = error((*begin)->str);
+
+        delete a;
+        return err;
     }
 }

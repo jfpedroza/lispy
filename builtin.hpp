@@ -50,6 +50,11 @@ namespace builtin {
     lval* cons(lenv *env, lval *args);
     lval* len(lenv *env, lval *args);
     lval* init(lenv *env, lval *args);
+
+    // String funtions
+    lval* load(lenv *env, lval *args);
+    lval* print(lenv *env, lval *args);
+    lval* make_error(lenv *env, lval *args);
 }
 
 #endif // LISPY_BUILTIN_HPP
