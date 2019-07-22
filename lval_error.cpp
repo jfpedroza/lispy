@@ -45,8 +45,28 @@ namespace lerr {
         return ss.str();
     }
 
+    string passed_incorrect_type(const string &func, lval_type got, std::initializer_list<lval_type> expected) {
+        stringstream ss;
+        ss << "Function '" << func << "' passed incorrect type. Got " << got << ", Expected one of ";
+
+        for (auto it = expected.begin(); it != expected.end();) {
+            ss << *it;
+            if (++it == expected.end()) {
+                ss << '.';
+            } else {
+                ss << ", ";
+            }
+        }
+
+        return ss.str();
+    }
+
     string passed_nil_expr(const string &func) {
         return "Function '" + func + "' passed {}!";
+    }
+
+    string passed_empty_string(const string &func) {
+        return "Function '" + func + "' passed empty string!";
     }
 
     string cant_define_non_sym(const string &func, lval_type got) {
@@ -64,7 +84,7 @@ namespace lerr {
     }
 
     string could_not_load_library(const string &msg) {
-        return "Cound not load library: " + msg;
+        return "Cound not load library " + msg;
     }
 }
 

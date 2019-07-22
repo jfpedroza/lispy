@@ -77,8 +77,14 @@ switch (X->type) { \
 #define LASSERT_TYPE(func, args, cell, expected) \
   LASSERT(args, (cell)->type == expected, lerr::passed_incorrect_type(func, (cell)->type, expected))
 
+#define LASSERT_TYPE2(func, args, cell, expected1, expected2) \
+  LASSERT(args, (cell)->type == expected1 || (cell)->type == expected2, lerr::passed_incorrect_type(func, (cell)->type, {expected1, expected2}))
+
 #define LASSERT_NOT_EMPTY(func, args, cell) \
   LASSERT(args, (cell)->cells.size() != 0, lerr::passed_nil_expr(func))
+
+#define LASSERT_NOT_EMPTY_STRING(func, args, cell) \
+  LASSERT(args, !(cell)->str.empty(), lerr::passed_empty_string(func))
 
 #define LASSERT_NUMBER(func, args, cell) \
     LASSERT(args, (cell)->type == lval_type::integer || (cell)->type == lval_type::decimal, \
@@ -142,6 +148,8 @@ namespace builtin {
         e->add_builtin("load", load);
         e->add_builtin("print", print);
         e->add_builtin("error", make_error);
+        e->add_builtin("read", read);
+        e->add_builtin("show", show);
 
         // Atoms
         lval *True = new lval(true);
@@ -335,12 +343,7 @@ namespace builtin {
         return lval::eval_qexpr(e, result);
     }
 
-    lval* head(lenv *e, lval *a) {
-        LASSERT_NUM_ARGS("head", a, 1)
-
-        auto begin = a->cells.begin();
-
-        LASSERT_TYPE("head", a, *begin, lval_type::qexpr)
+    lval* qexpr_head(lval *a, lval::iter begin) {
         LASSERT_NOT_EMPTY("head", a, *begin)
 
         auto v = lval::take(a, begin);
@@ -351,17 +354,52 @@ namespace builtin {
         return v;
     }
 
-    lval* tail(lenv *e, lval *a) {
-        LASSERT_NUM_ARGS("tail", a, 1)
+    lval* string_head(lval *a, lval::iter begin) {
+        LASSERT_NOT_EMPTY_STRING("head", a, *begin)
+
+        auto v = lval::take(a, begin);
+        v->str = v->str.substr(0, 1);
+
+        return v;
+    }
+
+    lval* head(lenv *e, lval *a) {
+        LASSERT_NUM_ARGS("head", a, 1)
 
         auto begin = a->cells.begin();
 
-        LASSERT_TYPE("tail", a, *begin, lval_type::qexpr)
+        LASSERT_TYPE2("head", a, *begin, lval_type::qexpr, lval_type::string)
+
+        if ((*begin)->type == lval_type::qexpr) return qexpr_head(a, begin);
+        else return string_head(a, begin);
+    }
+
+    lval* qexpr_tail(lval *a, lval::iter begin) {
         LASSERT_NOT_EMPTY("tail", a, *begin)
 
         auto v = lval::take(a, begin);
         delete v->pop_first();
         return v;
+    }
+
+    lval* string_tail(lval *a, lval::iter begin) {
+        LASSERT_NOT_EMPTY_STRING("tail", a, *begin)
+
+        auto v = lval::take(a, begin);
+        v->str = v->str.substr(1);
+
+        return v;
+    }
+
+    lval* tail(lenv *e, lval *a) {
+        LASSERT_NUM_ARGS("tail", a, 1)
+
+        auto begin = a->cells.begin();
+
+        LASSERT_TYPE2("tail", a, *begin, lval_type::qexpr, lval_type::string)
+
+        if ((*begin)->type == lval_type::qexpr) return qexpr_tail(a, begin);
+        else return string_tail(a, begin);
     }
 
     lval* list(lenv *e, lval *a) {
@@ -379,15 +417,36 @@ namespace builtin {
         return lval::eval_qexpr(e, x);
     }
 
-    lval* join(lenv *e, lval *a) {
-        for (auto cell: a->cells) {
-            LASSERT_TYPE("join", a, cell, lval_type::qexpr)
-        }
-
+    lval* qexpr_join(lval *a) {
         auto x = a->pop_first();
         for (auto expr: a->cells) {
             x->cells.splice(x->cells.end(), expr->cells);
         }
+
+        return x;
+    }
+
+    lval* string_join(lval *a) {
+        auto x = a->pop_first();
+        for (auto expr: a->cells) {
+            x->str += expr->str;
+        }
+
+        return x;
+    }
+
+    lval* join(lenv *e, lval *a) {
+        auto it = a->cells.begin();
+        auto first = *it;
+        LASSERT_TYPE2("join", a, first, lval_type::qexpr, lval_type::string)
+
+        for (++it; it != a->cells.end(); ++it) {
+            LASSERT_TYPE("join", a, *it, first->type)
+        }
+
+        lval *x;
+        if (first->type == lval_type::qexpr) x = qexpr_join(a);
+        else x = string_join(a);
 
         delete a;
         return x;
@@ -411,10 +470,10 @@ namespace builtin {
         LASSERT_NUM_ARGS("len", a, 1)
         auto begin = a->cells.begin();
 
-        LASSERT_TYPE("len", a, *begin, lval_type::qexpr)
+        LASSERT_TYPE2("len", a, *begin, lval_type::qexpr, lval_type::string)
 
         auto x = lval::take(a, begin);
-        auto length = new lval((long)x->cells.size());
+        auto length = new lval(x->type == lval_type::qexpr ? (long)x->cells.size() : (long)x->str.size());
         delete x;
         return length;
     }
@@ -518,7 +577,7 @@ namespace builtin {
             free(err_msg);
             delete a;
 
-            delete err;
+            return err;
         }
     }
 
@@ -543,5 +602,51 @@ namespace builtin {
 
         delete a;
         return err;
+    }
+
+    lval* read(lenv *e, lval *a) {
+        LASSERT_NUM_ARGS("read", a, 1)
+        auto begin = a->cells.begin();
+
+        LASSERT_TYPE("read", a, *begin, lval_type::string)
+
+        mpc_result_t r;
+        if (mpc_parse("<read>", (*begin)->str.c_str(), Lispy, &r)) {
+            lval *result = lval::read((mpc_ast_t*)r.output);
+            result->type = lval_type::qexpr;
+
+            mpc_ast_delete((mpc_ast_t*)r.output);
+            delete a;
+
+            return result;
+        } else {
+            char* err_msg = mpc_err_string(r.error);
+            mpc_err_delete(r.error);
+
+            auto err = error(lerr::could_not_load_library(err_msg));
+            free(err_msg);
+            delete a;
+
+            return err;
+        }
+    }
+
+    lval* show(lenv *e, lval *a) {
+        for (auto cell: a->cells) {
+            LASSERT_TYPE("show", a, cell, lval_type::string)
+        }
+
+        for (auto it = a->cells.begin(); it != a->cells.end();) {
+            cout << (*it)->str;
+            if (++it == a->cells.end()) {
+                cout << endl;
+            } else {
+                cout << ' ';
+            }
+        }
+
+        delete a;
+
+        return lval::sexpr();
     }
 }

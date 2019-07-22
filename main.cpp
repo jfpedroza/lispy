@@ -12,6 +12,7 @@ using std::cout;
 using std::endl;
 using std::string;
 
+void cleanup();
 void exit_handler(int);
 
 /* Create some parsers */
@@ -91,12 +92,17 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    cleanup();
     return 0;
 }
 
-void exit_handler(int) {
+void cleanup() {
     /* Undefine and Delete our Parsers */
     mpc_cleanup(10, Decimal, Integer, Number, Symbol, String, Sexpr, Qexpr, Expr, Comment, Lispy);
+}
+
+void exit_handler(int) {
+    cleanup();
     cout << "\nBye" << endl;
     exit(0);
 }
