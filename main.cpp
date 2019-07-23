@@ -50,6 +50,21 @@ int main(int argc, char* argv[]) {
     auto env = lenv();
     builtin::add_builtins(&env);
 
+    // Load prelude
+    /*{
+        lval *args = lval::sexpr({ new lval(string(prelude)) });
+        lval *x = builtin::read_file(&env, args, "prelude.lspy");
+
+        if (x->type == lval_type::error) {
+            cout << *x << endl;
+            delete x;
+            cleanup();
+            return 1;
+        }
+
+        delete x;
+    }*/
+
     // Interactive prompt
     if (argc == 1) {
         /* Print Version and Exit Information */
