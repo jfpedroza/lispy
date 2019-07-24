@@ -8,12 +8,19 @@
 struct lval;
 
 struct lenv {
-    std::unordered_map<std::string, lval*> symbols;
+    using table_type = std::unordered_map<std::string, lval*>;
 
+    lenv *parent;
+    table_type symbols;
+
+    lenv();
+    lenv(const lenv &other);
+    lenv(const lenv *const other);
     ~lenv();
 
     lval* get(const std::string &sym) const;
     void put(const std::string &sym, const lval *const val);
+    void def(const std::string &sym, const lval *const val);
     void add_builtin(const std::string &name, lbuiltin func);
 };
 
