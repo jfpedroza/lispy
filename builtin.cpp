@@ -605,13 +605,17 @@ namespace builtin {
     }
 
     lval* read(lenv *e, lval *a) {
+        return read_file(e, a, "<read>");
+    }
+
+    lval* read_file(lenv *e, lval *a, const string &filename) {
         LASSERT_NUM_ARGS("read", a, 1)
         auto begin = a->cells.begin();
 
         LASSERT_TYPE("read", a, *begin, lval_type::string)
 
         mpc_result_t r;
-        if (mpc_parse("<read>", (*begin)->str.c_str(), Lispy, &r)) {
+        if (mpc_parse(filename.c_str(), (*begin)->str.c_str(), Lispy, &r)) {
             lval *result = lval::read((mpc_ast_t*)r.output);
             result->type = lval_type::qexpr;
 

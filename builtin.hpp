@@ -56,6 +56,7 @@ namespace builtin {
     lval* print(lenv *env, lval *args);
     lval* make_error(lenv *env, lval *args);
     lval* read(lenv *env, lval *args);
+    lval* read_file(lenv *env, lval *args, const std::string &filename);
     lval* show(lenv *env, lval *args);
 }
 

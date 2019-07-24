@@ -12,6 +12,7 @@ using std::cout;
 using std::endl;
 using std::string;
 
+bool load_prelude(lenv *e);
 void cleanup();
 void exit_handler(int);
 
@@ -49,6 +50,11 @@ int main(int argc, char* argv[]) {
 
     auto env = lenv();
     builtin::add_builtins(&env);
+
+    // Load prelude
+    if (!load_prelude(&env)) {
+        return 1;
+    }
 
     // Interactive prompt
     if (argc == 1) {
@@ -94,6 +100,34 @@ int main(int argc, char* argv[]) {
 
     cleanup();
     return 0;
+}
+
+bool load_prelude(lenv *e) {
+    lval *args = lval::sexpr({ new lval(string(prelude)) });
+    lval *expr = builtin::read_file(e, args, "prelude.lspy");
+
+    if (expr->type == lval_type::error) {
+        cout << *expr << endl;
+        delete expr;
+        cleanup();
+        return false;
+    }
+
+    while (!expr->cells.empty()) {
+        auto x = lval::eval(e, expr->pop_first());
+        if (x->type == lval_type::error) {
+            cout << "Failed to load prelude: " << *x << endl;
+            delete x;
+            delete expr;
+            cleanup();
+            return false;
+        }
+
+        delete x;
+    }
+
+    delete expr;
+    return true;
 }
 
 void cleanup() {
