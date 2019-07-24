@@ -179,6 +179,7 @@
 ; Wheather a number is odd
 (fun {odd n} {not (even n)})
 
+; Comparison function wrappers to allow partiall application
 (fun {eq x y} {== x y})
 (fun {ne x y} {!= x y})
 (fun {gt x y} {> x y})

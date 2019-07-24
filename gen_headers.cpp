@@ -25,7 +25,7 @@ bool write_file(ofstream &out, const string &var_name, const string &filename) {
         }
     }
 
-    out << "};\n\n";
+    out << ", 0};\n\n";
 
     return true;
 }
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     if (argc < 2) return 1;
 
     ofstream out(argv[1]);
-    out << "#ifndef LISPY_GENEATED_HPP\n#define LISPY_GENEATED_HPP\n\n";
+    out << "#ifndef LISPY_GENERATED_HPP\n#define LISPY_GENERATED_HPP\n\n";
 
     if (write_file(out, "language_grammar", "../language.txt")) {
         if (!write_file(out, "prelude", "../prelude.lspy")) {
@@ -44,5 +44,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    out << "#endif // LISPY_GENEATED_HPP" << endl;
+    out << "#endif // LISPY_GENERATED_HPP" << endl;
+    return 0;
 }
