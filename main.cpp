@@ -6,7 +6,7 @@
 #include "generated.hpp"
 #include "lval.hpp"
 #include "lenv.hpp"
-#include "editline.hpp"
+#include <linenoise.h>
 
 using std::cout;
 using std::endl;
@@ -29,6 +29,8 @@ mpc_parser_t* Comment;
 mpc_parser_t* Lispy;
 
 int main(int argc, char* argv[]) {
+    linenoiseInstallWindowChangeHandler();
+
     struct sigaction sig_handler;
     sig_handler.sa_handler = exit_handler;
     sigemptyset(&sig_handler.sa_mask);
@@ -62,12 +64,19 @@ int main(int argc, char* argv[]) {
         cout << "Lispy Version " << LISPY_VERSION << endl;
         cout << "Press Ctrl+C to Exit\n" << endl;
 
+        auto prompt = "\x1b[1;32mlispy\x1b[0m> ";
+
         while(true) {
             /* Output our prompt  and get input */
-            char *input = readline("lispy> ");
+            char *input = linenoise(prompt);
+            if (!input) break;
+            else if (*input == '\0') {
+                free(input);
+                break;
+            }
 
             /* Add input to history */
-            add_history(input);
+            linenoiseHistoryAdd(input);
 
             /* Attempt to Parse the user Input */
             mpc_result_t r;
@@ -85,6 +94,9 @@ int main(int argc, char* argv[]) {
 
             free(input);
         }
+
+        cout << "\nBye" << endl;
+        linenoiseHistoryFree();
     } else { // List of files to load
         for (int i = 1; i < argc; ++i) {
             lval *args = lval::sexpr({ new lval(string(argv[i])) });
