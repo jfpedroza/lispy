@@ -155,6 +155,7 @@ void cleanup() {
 
 void exit_handler(int) {
     cleanup();
+    linenoiseHistoryFree();
     cout << "\nBye" << endl;
     exit(0);
 }
