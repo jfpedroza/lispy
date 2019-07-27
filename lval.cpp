@@ -35,39 +35,73 @@ bool should_skip_child(mpc_ast_t *child) {
 
 lval::lval(lval_type type) {
     this->type = type;
+    this->body = nullptr;
+    this->formals = nullptr;
+    this->env = nullptr;
+    this->boolean = false;
+    this->dec = 0.0;
+    this->integ = 0;
 }
 
 lval::lval(long num) {
     this->type = lval_type::integer;
     this->integ = num;
+    this->body = nullptr;
+    this->formals = nullptr;
+    this->env = nullptr;
+    this->boolean = false;
+    this->dec = 0.0;
 }
 
 lval::lval(double num) {
     this->type = lval_type::decimal;
     this->dec = num;
+    this->body = nullptr;
+    this->formals = nullptr;
+    this->env = nullptr;
+    this->boolean = false;
+    this->integ = 0;
 }
 
 lval::lval(bool boolean) {
     this->type = lval_type::boolean;
     this->boolean = boolean;
+    this->body = nullptr;
+    this->formals = nullptr;
+    this->env = nullptr;
+    this->dec = 0.0;
+    this->integ = 0;
 }
 
 lval::lval(string str) {
     this->type = lval_type::string;
     this->str = str;
+    this->body = nullptr;
+    this->formals = nullptr;
+    this->env = nullptr;
+    this->boolean = false;
+    this->dec = 0.0;
+    this->integ = 0;
 }
 
-lval::lval(lbuiltin fun) {
+lval::lval(lbuiltin fun): builtin(fun) {
     this->type = lval_type::func;
-    this->builtin = fun;
+    this->body = nullptr;
+    this->formals = nullptr;
+    this->env = nullptr;
+    this->boolean = false;
+    this->dec = 0.0;
+    this->integ = 0;
 }
 
-lval::lval(lval *formals, lval *body) {
+lval::lval(lval *formals, lval *body): builtin(nullptr) {
     this->type = lval_type::func;
-    this->builtin = nullptr;
     this->formals = formals;
     this->body = body;
     this->env = new lenv();
+    this->boolean = false;
+    this->dec = 0.0;
+    this->integ = 0;
 }
 
 lval::lval(const lval &other) {
@@ -98,6 +132,7 @@ lval::lval(const lval &other) {
                 [](auto cell) { return new lval(cell); }
             );
             break;
+        default: break;
     }
 }
 
@@ -390,7 +425,7 @@ ostream& operator<<(ostream &os, const lval &value) {
             if (value.builtin) {
                 return os << "<builtin>";
             } else {
-                os << "(\\ " << *value.formals << ' ' << *value.body << ')';
+                return os << "(\\ " << *value.formals << ' ' << *value.body << ')';
             }
             break;
         case lval_type::error:
@@ -401,9 +436,10 @@ ostream& operator<<(ostream &os, const lval &value) {
 
         case lval_type::qexpr:
             return value.print_expr(os, '{', '}');
-    }
 
-    return os;
+        default:
+            return os;
+    }
 }
 
 bool lval::operator==(const lval &other) const {

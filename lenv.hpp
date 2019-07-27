@@ -16,7 +16,7 @@ struct lenv {
 
     lenv();
     lenv(const lenv &other);
-    lenv(const lenv *const other);
+    explicit lenv(const lenv *const other);
     ~lenv();
 
     std::vector<std::string> keys() const;

@@ -45,23 +45,23 @@ struct lval {
 
     using iter = cell_type::iterator;
 
-    lval(lval_type type);
+    explicit lval(lval_type type);
 
-    lval(long num);
+    explicit lval(long num);
 
-    lval(double num);
+    explicit lval(double num);
 
-    lval(bool boolean);
+    explicit lval(bool boolean);
 
     explicit lval(std::string str);
 
-    lval(lbuiltin fun);
+    explicit lval(lbuiltin fun);
 
     lval(lval *formals, lval *body);
 
     lval(const lval &other);
 
-    lval(const lval *const other);
+    explicit lval(const lval *const other);
 
     static lval* symbol(std::string err);
 

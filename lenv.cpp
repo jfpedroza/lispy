@@ -11,9 +11,8 @@ lenv::lenv() {
     this->parent = nullptr;
 }
 
-lenv::lenv(const lenv &other) {
+lenv::lenv(const lenv &other): symbols(table_type(other.symbols)) {
     this->parent = other.parent;
-    this->symbols = table_type(other.symbols);
     for (auto it = this->symbols.begin(); it != this->symbols.end(); ++it) {
         it->second = new lval(it->second);
     }
