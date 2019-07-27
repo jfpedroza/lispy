@@ -1,9 +1,10 @@
-#include <string>
+#include <algorithm>
 #include "lenv.hpp"
 #include "lval.hpp"
 #include "lval_error.hpp"
 
 using std::string;
+using std::vector;
 auto error = lval::error;
 
 lenv::lenv() {
@@ -24,6 +25,27 @@ lenv::~lenv() {
     for (auto entry: this->symbols) {
         delete entry.second;
     }
+}
+
+vector<string> lenv::keys() const {
+    vector<string> keys;
+    keys.reserve(symbols.size());
+    std::transform(symbols.begin(), symbols.end(), std::back_inserter(keys), [](auto it) {return it.first;});
+    return keys;
+}
+
+vector<const string*> lenv::keys(const string &prefix) const {
+    vector<const string*> keys;
+    keys.reserve(symbols.size());
+
+    for (auto it = symbols.begin(); it != symbols.end(); ++it) {
+        auto &sym = it->first;
+        if (prefix.size() <= sym.size() && std::equal(prefix.begin(), prefix.end(), sym.begin())) {
+            keys.push_back(&sym);
+        }
+    }
+
+    return keys;
 }
 
 lval* lenv::get(const string &sym) const {

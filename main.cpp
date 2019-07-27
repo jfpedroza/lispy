@@ -12,9 +12,10 @@ using std::cout;
 using std::endl;
 using std::string;
 
-bool load_prelude(lenv *e);
+bool load_prelude();
 void cleanup();
 void exit_handler(int);
+void completion_hook(char const *prefix, linenoiseCompletions *lc);
 
 /* Create some parsers */
 mpc_parser_t* Integer;
@@ -27,6 +28,8 @@ mpc_parser_t* Qexpr;
 mpc_parser_t* Expr;
 mpc_parser_t* Comment;
 mpc_parser_t* Lispy;
+
+lenv *env = nullptr;
 
 int main(int argc, char* argv[]) {
     linenoiseInstallWindowChangeHandler();
@@ -50,16 +53,19 @@ int main(int argc, char* argv[]) {
 
     mpca_lang(MPCA_LANG_DEFAULT, language_grammar, Integer, Decimal, Number, Symbol, String, Sexpr, Qexpr, Expr, Comment, Lispy);
 
-    auto env = lenv();
-    builtin::add_builtins(&env);
+    auto e = lenv();
+    env = &e;
+    builtin::add_builtins(env);
 
     // Load prelude
-    if (!load_prelude(&env)) {
+    if (!load_prelude()) {
         return 1;
     }
 
     // Interactive prompt
     if (argc == 1) {
+        linenoiseSetCompletionCallback(completion_hook);
+
         /* Print Version and Exit Information */
         cout << "Lispy Version " << LISPY_VERSION << endl;
         cout << "Press Ctrl+C to Exit\n" << endl;
@@ -82,7 +88,7 @@ int main(int argc, char* argv[]) {
             mpc_result_t r;
             if (mpc_parse("<stdin>", input, Lispy, &r)) {
                 lval *result = lval::read((mpc_ast_t*)r.output);
-                result = lval::eval(&env, result);
+                result = lval::eval(env, result);
                 cout << *result << endl;
                 delete result;
                 mpc_ast_delete((mpc_ast_t*)r.output);
@@ -100,7 +106,7 @@ int main(int argc, char* argv[]) {
     } else { // List of files to load
         for (int i = 1; i < argc; ++i) {
             lval *args = lval::sexpr({ new lval(string(argv[i])) });
-            lval *x = builtin::load(&env, args);
+            lval *x = builtin::load(env, args);
 
             if (x->type == lval_type::error) {
                 cout << *x << endl;
@@ -114,9 +120,9 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-bool load_prelude(lenv *e) {
+bool load_prelude() {
     lval *args = lval::sexpr({ new lval(string(prelude)) });
-    lval *expr = builtin::read_file(e, args, "prelude.lspy");
+    lval *expr = builtin::read_file(env, args, "prelude.lspy");
 
     if (expr->type == lval_type::error) {
         cout << *expr << endl;
@@ -126,7 +132,7 @@ bool load_prelude(lenv *e) {
     }
 
     while (!expr->cells.empty()) {
-        auto x = lval::eval(e, expr->pop_first());
+        auto x = lval::eval(env, expr->pop_first());
         if (x->type == lval_type::error) {
             cout << "Failed to load prelude: " << *x << endl;
             delete x;
@@ -151,4 +157,11 @@ void exit_handler(int) {
     cleanup();
     cout << "\nBye" << endl;
     exit(0);
+}
+
+void completion_hook(char const *prefix, linenoiseCompletions *lc) {
+    auto symbols = env->keys(prefix);
+    for (auto sym: symbols) {
+        linenoiseAddCompletion(lc, sym->c_str());
+    }
 }

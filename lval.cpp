@@ -91,8 +91,12 @@ lval::lval(const lval &other) {
             break;
         case lval_type::sexpr:
         case lval_type::qexpr:
-            this->cells = cell_type(other.cells.size(), nullptr);
-            std::transform(other.cells.begin(), other.cells.end(), this->cells.begin(), [](auto cell) { return new lval(cell); });
+            std::transform(
+                other.cells.begin(),
+                other.cells.end(),
+                std::back_inserter(this->cells),
+                [](auto cell) { return new lval(cell); }
+            );
             break;
     }
 }
