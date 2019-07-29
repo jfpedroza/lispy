@@ -7,41 +7,41 @@
 #include "mpc.h"
 
 class lispy {
-    public:
-        lispy();
-        ~lispy();
+   public:
+    lispy();
+    ~lispy();
 
-        static lispy* instance();
+    static lispy *instance();
 
-        int run(int argc, char *argv[]);
-        mpc_parser_t* parser();
+    int run(int argc, char *argv[]);
+    mpc_parser_t *parser();
 
-    private:
-        lenv env;
-        static lispy *_instance;
+   private:
+    lenv env;
+    static lispy *_instance;
 
-        bool load_prelude();
-        void run_interactive();
-        void load_files(const std::vector<std::string> &files);
-        void register_completion_hook();
+    bool load_prelude();
+    void run_interactive();
+    void load_files(const std::vector<std::string> &files);
+    void register_completion_hook();
 
-        friend void completion_hook(char const *prefix, linenoiseCompletions *lc);
+    friend void completion_hook(char const *prefix, linenoiseCompletions *lc);
 
-        // Grammar parsers
-        mpc_parser_t *integer_parser;
-        mpc_parser_t *decimal_parser;
-        mpc_parser_t *number_parser;
-        mpc_parser_t *symbol_parser;
-        mpc_parser_t *string_parser;
-        mpc_parser_t *sexpr_parser;
-        mpc_parser_t *qexpr_parser;
-        mpc_parser_t *expr_parser;
-        mpc_parser_t *comment_parser;
-        mpc_parser_t *lispy_parser;
+    // Grammar parsers
+    mpc_parser_t *integer_parser;
+    mpc_parser_t *decimal_parser;
+    mpc_parser_t *number_parser;
+    mpc_parser_t *symbol_parser;
+    mpc_parser_t *string_parser;
+    mpc_parser_t *sexpr_parser;
+    mpc_parser_t *qexpr_parser;
+    mpc_parser_t *expr_parser;
+    mpc_parser_t *comment_parser;
+    mpc_parser_t *lispy_parser;
 
-        // Command line arguments parsing
-        TCLAP::CmdLine cmd_line;
-        TCLAP::UnlabeledMultiArg<std::string> files_arg;
+    // Command line arguments parsing
+    TCLAP::CmdLine cmd_line;
+    TCLAP::UnlabeledMultiArg<std::string> files_arg;
 };
 
 #endif // LISPY_HPP

@@ -2,11 +2,11 @@
 #include <sstream>
 #include <string>
 
+using std::endl;
 using std::ifstream;
 using std::ofstream;
 using std::string;
 using std::stringstream;
-using std::endl;
 
 bool write_file(ofstream &out, const string &var_name, const string &filename) {
     ifstream file(filename);
@@ -30,7 +30,7 @@ bool write_file(ofstream &out, const string &var_name, const string &filename) {
     return true;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     if (argc < 2) return 1;
 
     ofstream out(argv[1]);

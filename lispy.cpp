@@ -1,8 +1,8 @@
 #include "lispy.hpp"
+#include <linenoise.h>
 #include "generated.hpp"
 #include "lispy_config.h"
 #include "lval.hpp"
-#include <linenoise.h>
 
 using std::cerr;
 using std::cout;
@@ -96,7 +96,7 @@ bool lispy::load_prelude() {
 void completion_hook(char const *prefix, linenoiseCompletions *lc) {
     auto lspy = lispy::instance();
     auto symbols = lspy->env.keys(prefix);
-    for (auto sym : symbols) {
+    for (auto sym: symbols) {
         linenoiseAddCompletion(lc, sym->c_str());
     }
 }
@@ -145,7 +145,7 @@ void lispy::run_interactive() {
 }
 
 void lispy::load_files(const std::vector<std::string> &files) {
-    for (auto file : files) {
+    for (auto file: files) {
         lval *args = lval::sexpr({new lval(file)});
         lval *x = builtin::load(&env, args);
 

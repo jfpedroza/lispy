@@ -2,10 +2,10 @@
 #define LVAL_HPP
 
 #include <iostream>
-#include <string>
 #include <list>
-#include "mpc.h"
+#include <string>
 #include "builtin.hpp"
+#include "mpc.h"
 
 enum class lval_type {
     integer,
@@ -20,7 +20,7 @@ enum class lval_type {
     error
 };
 
-std::ostream& operator<<(std::ostream &os, const lval_type &type);
+std::ostream &operator<<(std::ostream &os, const lval_type &type);
 
 struct lenv;
 
@@ -39,7 +39,7 @@ struct lval {
     lval *formals;
     lval *body;
 
-    using cell_type = std::list<lval*>;
+    using cell_type = std::list<lval *>;
 
     cell_type cells;
 
@@ -63,55 +63,55 @@ struct lval {
 
     explicit lval(const lval *const other);
 
-    static lval* symbol(std::string err);
+    static lval *symbol(std::string err);
 
-    static lval* error(std::string err);
+    static lval *error(std::string err);
 
-    static lval* sexpr();
+    static lval *sexpr();
 
-    static lval* sexpr(std::initializer_list<lval*> cells);
+    static lval *sexpr(std::initializer_list<lval *> cells);
 
-    static lval* qexpr();
+    static lval *qexpr();
 
-    static lval* qexpr(std::initializer_list<lval*> cells);
+    static lval *qexpr(std::initializer_list<lval *> cells);
 
     ~lval();
 
     bool is_number() const;
     double get_number() const;
 
-    lval* pop(const iter &it);
+    lval *pop(const iter &it);
 
-    lval* pop(size_t i);
+    lval *pop(size_t i);
 
-    lval* pop_first();
+    lval *pop_first();
 
-    lval* call(lenv *e, lval *a);
+    lval *call(lenv *e, lval *a);
 
-    static lval* take(lval *v, const iter &it);
+    static lval *take(lval *v, const iter &it);
 
-    static lval* take(lval *v, size_t i);
+    static lval *take(lval *v, size_t i);
 
-    static lval* take_first(lval *v);
+    static lval *take_first(lval *v);
 
-    static lval* read_integer(mpc_ast_t *t);
+    static lval *read_integer(mpc_ast_t *t);
 
-    static lval* read_decimal(mpc_ast_t *t);
+    static lval *read_decimal(mpc_ast_t *t);
 
-    static lval* read_string(mpc_ast_t *t);
+    static lval *read_string(mpc_ast_t *t);
 
-    static lval* read(mpc_ast_t *t);
+    static lval *read(mpc_ast_t *t);
 
-    static lval* eval(lenv *e, lval *v);
+    static lval *eval(lenv *e, lval *v);
 
-    static lval* eval_sexpr(lenv *e, lval *v);
+    static lval *eval_sexpr(lenv *e, lval *v);
 
-    static lval* eval_qexpr(lenv *e, lval *v);
+    static lval *eval_qexpr(lenv *e, lval *v);
 
-    friend std::ostream& operator<<(std::ostream &os, const lval &value);
+    friend std::ostream &operator<<(std::ostream &os, const lval &value);
 
-    std::ostream& print_expr(std::ostream &os, char open, char close) const;
-    std::ostream& print_str(std::ostream &os) const;
+    std::ostream &print_expr(std::ostream &os, char open, char close) const;
+    std::ostream &print_str(std::ostream &os) const;
 
     bool operator==(const lval &other) const;
     bool operator!=(const lval &other) const;

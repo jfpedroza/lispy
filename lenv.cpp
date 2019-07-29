@@ -1,5 +1,5 @@
-#include <algorithm>
 #include "lenv.hpp"
+#include <algorithm>
 #include "lval.hpp"
 #include "lval_error.hpp"
 
@@ -7,9 +7,7 @@ using std::string;
 using std::vector;
 auto error = lval::error;
 
-lenv::lenv() {
-    this->parent = nullptr;
-}
+lenv::lenv() { this->parent = nullptr; }
 
 lenv::lenv(const lenv &other): symbols(table_type(other.symbols)) {
     this->parent = other.parent;
@@ -29,17 +27,19 @@ lenv::~lenv() {
 vector<string> lenv::keys() const {
     vector<string> keys;
     keys.reserve(symbols.size());
-    std::transform(symbols.begin(), symbols.end(), std::back_inserter(keys), [](auto it) {return it.first;});
+    std::transform(symbols.begin(), symbols.end(), std::back_inserter(keys),
+                   [](auto it) { return it.first; });
     return keys;
 }
 
-vector<const string*> lenv::keys(const string &prefix) const {
-    vector<const string*> keys;
+vector<const string *> lenv::keys(const string &prefix) const {
+    vector<const string *> keys;
     keys.reserve(symbols.size());
 
     for (auto it = symbols.begin(); it != symbols.end(); ++it) {
         auto &sym = it->first;
-        if (prefix.size() <= sym.size() && std::equal(prefix.begin(), prefix.end(), sym.begin())) {
+        if (prefix.size() <= sym.size() &&
+            std::equal(prefix.begin(), prefix.end(), sym.begin())) {
             keys.push_back(&sym);
         }
     }
@@ -47,7 +47,7 @@ vector<const string*> lenv::keys(const string &prefix) const {
     return keys;
 }
 
-lval* lenv::get(const string &sym) const {
+lval *lenv::get(const string &sym) const {
     auto it = symbols.find(sym);
     if (it != symbols.end()) {
         return new lval(it->second);
