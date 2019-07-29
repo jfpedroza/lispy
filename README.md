@@ -5,7 +5,7 @@ C++ implementation of a Lisp programming language from the [Build your own Lisp]
 ## TODO
 
 * [X] Completion from the global environment (Linenoise)
-* [ ] Argument parsing with Commando
+* [ ] Argument parsing with TCLAP
 * [ ] Macros (start with def and fun)
 * [ ] List literals
 * [ ] Ranges

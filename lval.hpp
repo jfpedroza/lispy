@@ -117,16 +117,4 @@ struct lval {
     bool operator!=(const lval &other) const;
 };
 
-/* Create some parsers */
-extern mpc_parser_t* Integer;
-extern mpc_parser_t* Decimal;
-extern mpc_parser_t* Number;
-extern mpc_parser_t* Symbol;
-extern mpc_parser_t* String;
-extern mpc_parser_t* Sexpr;
-extern mpc_parser_t* Qexpr;
-extern mpc_parser_t* Expr;
-extern mpc_parser_t* Comment;
-extern mpc_parser_t* Lispy;
-
 #endif // LVAL_HPP

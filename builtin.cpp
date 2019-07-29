@@ -3,6 +3,7 @@
 #include <functional>
 #include <iostream>
 #include "builtin.hpp"
+#include "lispy.hpp"
 #include "lval.hpp"
 #include "lval_error.hpp"
 #include "lenv.hpp"
@@ -552,7 +553,7 @@ namespace builtin {
         LASSERT_TYPE("load", a, *begin, lval_type::string)
 
         mpc_result_t r;
-        if (mpc_parse_contents((*begin)->str.c_str(), Lispy, &r)) {
+        if (mpc_parse_contents((*begin)->str.c_str(), lispy::instance()->parser(), &r)) {
 
             lval *expr = lval::read((mpc_ast_t*)r.output);
             mpc_ast_delete((mpc_ast_t*)r.output);
@@ -615,7 +616,7 @@ namespace builtin {
         LASSERT_TYPE("read", a, *begin, lval_type::string)
 
         mpc_result_t r;
-        if (mpc_parse(filename.c_str(), (*begin)->str.c_str(), Lispy, &r)) {
+        if (mpc_parse(filename.c_str(), (*begin)->str.c_str(), lispy::instance()->parser(), &r)) {
             lval *result = lval::read((mpc_ast_t*)r.output);
             result->type = lval_type::qexpr;
 
