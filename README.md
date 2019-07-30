@@ -6,7 +6,7 @@ C++ implementation of a Lisp programming language from the [Build your own Lisp]
 
 * [X] Completion from the global environment (Linenoise)
 * [X] Argument parsing with TCLAP
-* [ ] Evaluate strings with `-c`
+* [X] Evaluate strings with `-e`
 * [ ] Macros (start with def and fun)
 * [ ] List literals
 * [ ] Ranges
