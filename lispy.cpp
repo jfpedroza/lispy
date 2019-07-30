@@ -8,12 +8,17 @@ using std::cerr;
 using std::cout;
 using std::endl;
 using std::string;
+using std::vector;
 
 lispy *lispy::_instance = nullptr;
 
 lispy::lispy()
     : cmd_line("The Lispy interpreter", ' ', LISPY_VERSION),
-      files_arg("files", "Read programs from scripts", false, "file") {
+      interactive_arg("i", "interactive",
+                      "Run REPL, even when -e is present or files are given",
+                      false),
+      eval_args("e", "eval", "Eval program given as string", false, "program"),
+      file_args("files", "Read programs from scripts", false, "file") {
     integer_parser = mpc_new("integer");
     decimal_parser = mpc_new("decimal");
     number_parser = mpc_new("number");
@@ -51,14 +56,21 @@ int lispy::run(int argc, char *argv[]) {
     }
 
     try {
-        cmd_line.add(files_arg);
+        cmd_line.add(interactive_arg);
+        cmd_line.add(eval_args);
+        cmd_line.add(file_args);
         cmd_line.parse(argc, argv);
 
-        auto files = files_arg.getValue();
-        if (files.empty()) {
+        auto interactive = interactive_arg.getValue();
+        auto evals = eval_args.getValue();
+        auto files = file_args.getValue();
+
+        if (!eval_strings(evals) || !load_files(files)) {
+            return 1;
+        }
+
+        if ((evals.empty() && files.empty()) || interactive) {
             run_interactive();
-        } else {
-            load_files(files);
         }
     } catch (TCLAP::ArgException &e) {
         cerr << "Error: " << e.error() << " for arg " << e.argId() << endl;
@@ -144,15 +156,44 @@ void lispy::run_interactive() {
     linenoiseHistoryFree();
 }
 
-void lispy::load_files(const std::vector<std::string> &files) {
+bool lispy::load_files(const vector<string> &files) {
     for (auto file: files) {
         lval *args = lval::sexpr({new lval(file)});
         lval *x = builtin::load(&env, args);
 
         if (x->type == lval_type::error) {
             cout << *x << endl;
+            delete x;
+            return false;
         }
 
         delete x;
     }
+
+    return true;
+}
+
+bool lispy::eval_strings(const vector<string> &strings) {
+    for (auto str: strings) {
+        lval *args = lval::sexpr({new lval(str)});
+        lval *expr = builtin::read(&env, args);
+
+        if (expr->type == lval_type::error) {
+            cout << *expr << endl;
+            delete expr;
+            return false;
+        }
+
+        auto x = lval::eval_qexpr(&env, expr);
+        cout << *x << endl;
+
+        if (x->type == lval_type::error) {
+            delete x;
+            return false;
+        }
+
+        delete x;
+    }
+
+    return true;
 }

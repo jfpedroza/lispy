@@ -22,7 +22,8 @@ class lispy {
 
     bool load_prelude();
     void run_interactive();
-    void load_files(const std::vector<std::string> &files);
+    bool load_files(const std::vector<std::string> &files);
+    bool eval_strings(const std::vector<std::string> &strings);
     void register_completion_hook();
 
     friend void completion_hook(char const *prefix, linenoiseCompletions *lc);
@@ -41,7 +42,9 @@ class lispy {
 
     // Command line arguments parsing
     TCLAP::CmdLine cmd_line;
-    TCLAP::UnlabeledMultiArg<std::string> files_arg;
+    TCLAP::SwitchArg interactive_arg;
+    TCLAP::MultiArg<std::string> eval_args;
+    TCLAP::UnlabeledMultiArg<std::string> file_args;
 };
 
 #endif // LISPY_HPP
