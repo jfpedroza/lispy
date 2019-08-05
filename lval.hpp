@@ -15,6 +15,7 @@ enum class lval_type {
     symbol,
     string,
     func,
+    macro,
     sexpr,
     qexpr,
     error
@@ -55,10 +56,6 @@ struct lval {
 
     explicit lval(std::string str);
 
-    explicit lval(lbuiltin fun);
-
-    lval(lval *formals, lval *body);
-
     lval(const lval &other);
 
     explicit lval(const lval *const other);
@@ -66,6 +63,14 @@ struct lval {
     static lval *symbol(std::string err);
 
     static lval *error(std::string err);
+
+    static lval *function(lbuiltin fun);
+
+    static lval *function(lval *formals, lval *body);
+
+    static lval *macro(lbuiltin fun);
+
+    static lval *macro(lval *formals, lval *body);
 
     static lval *sexpr();
 
@@ -107,6 +112,8 @@ struct lval {
     static lval *eval_sexpr(lenv *e, lval *v);
 
     static lval *eval_qexpr(lenv *e, lval *v);
+
+    static lval *eval_cells(lenv *e, lval *v);
 
     friend std::ostream &operator<<(std::ostream &os, const lval &value);
 

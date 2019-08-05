@@ -24,7 +24,8 @@ struct lenv {
     lval *get(const std::string &sym) const;
     void put(const std::string &sym, const lval *const val);
     void def(const std::string &sym, const lval *const val);
-    void add_builtin(const std::string &name, lbuiltin func);
+    void add_builtin_function(const std::string &name, lbuiltin func);
+    void add_builtin_macro(const std::string &name, lbuiltin func);
 };
 
 #endif // LENV_HPP
