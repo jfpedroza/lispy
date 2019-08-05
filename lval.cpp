@@ -277,6 +277,13 @@ lval *lval::call(lenv *e, lval *a) {
             }
 
             auto nsym = formals->pop_first();
+
+            if (this->type == lval_type::macro) {
+                for (auto& cell: a->cells) {
+                    cell = lval::qexpr({ cell });
+                }
+            }
+
             env->put(nsym->sym, builtin::list(e, a));
             delete sym;
             delete nsym;
@@ -284,6 +291,10 @@ lval *lval::call(lenv *e, lval *a) {
         }
 
         auto val = a->pop_first();
+        if (this->type == lval_type::macro) {
+            val = lval::qexpr({val});
+        }
+
         env->put(sym->sym, val);
         delete sym;
         delete val;
@@ -435,7 +446,7 @@ lval *lval::eval_qexpr(lenv *e, lval *v) {
 
 lval *lval::eval_cells(lenv *e, lval *v) {
     std::transform(v->cells.begin(), v->cells.end(), v->cells.begin(),
-            std::bind(eval, e, std::placeholders::_1));
+                   std::bind(eval, e, std::placeholders::_1));
 
     for (auto it = v->cells.begin(); it != v->cells.end(); ++it) {
         if ((*it)->type == lval_type::error) {

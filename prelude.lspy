@@ -1,8 +1,8 @@
 ; Atoms
-(def {nil} {})
+(def nil {})
 
 ; Function definition
-(def {fun} (\ {args body} {
+(def fun (\ {args body} {
   def (head args) (\ (tail args) body)
 }))
 
@@ -15,8 +15,8 @@
 (fun {pack f & xs} {f xs})
 
 ; Curried and uncurried calling
-(def {uncurry} pack)
-(def {curry} unpack)
+(def uncurry pack)
+(def curry unpack)
 
 ; Perform several things in sequence
 (fun {do & l} {
@@ -41,7 +41,7 @@
 })
 
 ; Default case
-(def {otherwise} true)
+(def otherwise true)
 
 ; Matches the argument against all the values
 (fun {case x & xs} {
@@ -160,10 +160,10 @@
 })
 
 ; Calculates the sum of a list
-(def {sum} (unpack +))
+(def sum (unpack +))
 
 ; Calculates the product of a list
-(def {product} (unpack *))
+(def product (unpack *))
 
 ; Fibonacci
 (fun {fib n} {

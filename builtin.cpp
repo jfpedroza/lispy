@@ -532,7 +532,7 @@ lval *var(lenv *e, lval *a, const string &func) {
 
     LASSERT_TYPE2(func, a, *begin, lval_type::symbol, lval_type::qexpr)
 
-    lval* syms;
+    lval *syms;
 
     if ((*begin)->type == lval_type::qexpr) {
         syms = *begin;
@@ -541,7 +541,7 @@ lval *var(lenv *e, lval *a, const string &func) {
                     lerr::cant_define_non_sym(func, cell->type))
         }
     } else {
-        *begin = lval::qexpr({ *begin });
+        *begin = lval::qexpr({*begin});
         syms = *begin;
     }
 
