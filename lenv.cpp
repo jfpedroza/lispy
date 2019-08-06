@@ -77,6 +77,10 @@ void lenv::def(const string &sym, const lval *const v) {
     e->put(sym, v);
 }
 
-void lenv::add_builtin(const string &name, lbuiltin func) {
-    symbols.insert(std::make_pair(name, new lval(func)));
+void lenv::add_builtin_function(const string &name, lbuiltin func) {
+    symbols.insert(std::make_pair(name, lval::function(func)));
+}
+
+void lenv::add_builtin_macro(const string &name, lbuiltin func) {
+    symbols.insert(std::make_pair(name, lval::macro(func)));
 }

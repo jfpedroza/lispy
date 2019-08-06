@@ -28,6 +28,8 @@ ostream &operator<<(ostream &os, const lval_type &type) {
             return os << "String";
         case lval_type::func:
             return os << "Function";
+        case lval_type::macro:
+            return os << "Macro";
         case lval_type::sexpr:
             return os << "S-Expression";
         case lval_type::qexpr:
@@ -95,26 +97,6 @@ lval::lval(string str) {
     this->integ = 0;
 }
 
-lval::lval(lbuiltin fun): builtin(fun) {
-    this->type = lval_type::func;
-    this->body = nullptr;
-    this->formals = nullptr;
-    this->env = nullptr;
-    this->boolean = false;
-    this->dec = 0.0;
-    this->integ = 0;
-}
-
-lval::lval(lval *formals, lval *body): builtin(nullptr) {
-    this->type = lval_type::func;
-    this->formals = formals;
-    this->body = body;
-    this->env = new lenv();
-    this->boolean = false;
-    this->dec = 0.0;
-    this->integ = 0;
-}
-
 lval::lval(const lval &other) {
     this->type = other.type;
     switch (this->type) {
@@ -137,6 +119,7 @@ lval::lval(const lval &other) {
             this->str = other.str;
             break;
         case lval_type::func:
+        case lval_type::macro:
             if (other.builtin) {
                 this->builtin = other.builtin;
             } else {
@@ -171,6 +154,36 @@ lval *lval::error(string err) {
     return val;
 }
 
+lval *lval::function(lbuiltin fun) {
+    auto val = new lval(lval_type::func);
+    val->builtin = fun;
+    return val;
+}
+
+lval *lval::function(lval *formals, lval *body) {
+    auto val = new lval(lval_type::func);
+    val->builtin = nullptr;
+    val->formals = formals;
+    val->body = body;
+    val->env = new lenv();
+    return val;
+}
+
+lval *lval::macro(lbuiltin fun) {
+    auto val = new lval(lval_type::macro);
+    val->builtin = fun;
+    return val;
+}
+
+lval *lval::macro(lval *formals, lval *body) {
+    auto val = new lval(lval_type::macro);
+    val->builtin = nullptr;
+    val->formals = formals;
+    val->body = body;
+    val->env = new lenv();
+    return val;
+}
+
 lval *lval::sexpr() {
     auto val = new lval(lval_type::sexpr);
     return val;
@@ -198,7 +211,7 @@ lval::~lval() {
         delete cell;
     }
 
-    if (type == lval_type::func && !builtin) {
+    if ((type == lval_type::func || type == lval_type::macro) && !builtin) {
         delete formals;
         delete body;
         delete env;
@@ -264,6 +277,13 @@ lval *lval::call(lenv *e, lval *a) {
             }
 
             auto nsym = formals->pop_first();
+
+            if (this->type == lval_type::macro) {
+                for (auto &cell: a->cells) {
+                    cell = lval::qexpr({cell});
+                }
+            }
+
             env->put(nsym->sym, builtin::list(e, a));
             delete sym;
             delete nsym;
@@ -271,6 +291,10 @@ lval *lval::call(lenv *e, lval *a) {
         }
 
         auto val = a->pop_first();
+        if (this->type == lval_type::macro) {
+            val = lval::qexpr({val});
+        }
+
         env->put(sym->sym, val);
         delete sym;
         delete val;
@@ -374,34 +398,63 @@ lval *lval::eval(lenv *e, lval *v) {
 }
 
 lval *lval::eval_sexpr(lenv *e, lval *v) {
-    std::transform(v->cells.begin(), v->cells.end(), v->cells.begin(),
-                   std::bind(eval, e, std::placeholders::_1));
-
-    for (auto it = v->cells.begin(); it != v->cells.end(); ++it) {
-        if ((*it)->type == lval_type::error) return take(v, it);
-    }
-
     if (v->cells.empty()) return v;
+
+    auto begin = v->cells.begin();
+    *begin = eval(e, *begin);
 
     if (v->cells.size() == 1) return take_first(v);
 
     auto f = v->pop_first();
-    if (f->type != lval_type::func) {
-        auto type = f->type;
-        delete f;
-        delete v;
-        return error(lerr::sexpr_not_function(type));
+
+    switch (f->type) {
+        case lval_type::error:
+            delete v;
+            return f;
+
+        case lval_type::func: {
+            v = eval_cells(e, v);
+            if (v->type == lval_type::error) {
+                delete f;
+                return v;
+            }
+
+            auto result = f->call(e, v);
+            delete f;
+
+            return result;
+        }
+        case lval_type::macro: {
+            v->type = lval_type::qexpr;
+            auto result = f->call(e, v);
+            delete f;
+
+            return result;
+        }
+        default:
+            auto type = f->type;
+            delete f;
+            delete v;
+            return error(lerr::sexpr_not_function(type));
     }
-
-    auto result = f->call(e, v);
-    delete f;
-
-    return result;
 }
 
 lval *lval::eval_qexpr(lenv *e, lval *v) {
     v->type = lval_type::sexpr;
     return eval_sexpr(e, v);
+}
+
+lval *lval::eval_cells(lenv *e, lval *v) {
+    std::transform(v->cells.begin(), v->cells.end(), v->cells.begin(),
+                   std::bind(eval, e, std::placeholders::_1));
+
+    for (auto it = v->cells.begin(); it != v->cells.end(); ++it) {
+        if ((*it)->type == lval_type::error) {
+            return take(v, it);
+        }
+    }
+
+    return v;
 }
 
 ostream &lval::print_expr(ostream &os, char open, char close) const {
@@ -445,9 +498,17 @@ ostream &operator<<(ostream &os, const lval &value) {
 
         case lval_type::func:
             if (value.builtin) {
-                return os << "<builtin>";
+                return os << "<builtin function>";
             } else {
                 return os << "(\\ " << *value.formals << ' ' << *value.body
+                          << ')';
+            }
+            break;
+        case lval_type::macro:
+            if (value.builtin) {
+                return os << "<builtin macro>";
+            } else {
+                return os << "(\\! " << *value.formals << ' ' << *value.body
                           << ')';
             }
             break;
@@ -504,6 +565,7 @@ bool lval::operator==(const lval &other) const {
             return this->str == other.str;
 
         case lval_type::func:
+        case lval_type::macro:
             if (this->builtin && other.builtin) {
                 auto a = this->builtin.target<lval *(*)(lenv *, lval *)>();
                 auto b = other.builtin.target<lval *(*)(lenv *, lval *)>();

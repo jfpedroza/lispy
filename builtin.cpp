@@ -114,45 +114,46 @@ unordered_map<string, function<lval *(lval *, lval *)>> operator_table = {
 
 void add_builtins(lenv *e) {
     // Variable functions
-    e->add_builtin("def", def);
-    e->add_builtin("=", put);
-    e->add_builtin("\\", lambda);
+    e->add_builtin_macro("def", def);
+    e->add_builtin_macro("=", put);
+    e->add_builtin_function("\\", func_lambda);
+    e->add_builtin_function("\\!", macro_lambda);
 
     // Math functions
-    e->add_builtin("+", ope("+"));
-    e->add_builtin("-", ope("-"));
-    e->add_builtin("*", ope("*"));
-    e->add_builtin("/", ope("/"));
-    e->add_builtin("%", ope("%"));
-    e->add_builtin("^", ope("^"));
-    e->add_builtin("min", ope("min"));
-    e->add_builtin("max", ope("max"));
+    e->add_builtin_function("+", ope("+"));
+    e->add_builtin_function("-", ope("-"));
+    e->add_builtin_function("*", ope("*"));
+    e->add_builtin_function("/", ope("/"));
+    e->add_builtin_function("%", ope("%"));
+    e->add_builtin_function("^", ope("^"));
+    e->add_builtin_function("min", ope("min"));
+    e->add_builtin_function("max", ope("max"));
 
     // Comparison functions
-    e->add_builtin("==", equals);
-    e->add_builtin("!=", not_equals);
-    e->add_builtin(">", ordering_op(">"));
-    e->add_builtin("<", ordering_op("<"));
-    e->add_builtin(">=", ordering_op(">="));
-    e->add_builtin("<=", ordering_op("<="));
-    e->add_builtin("if", if_);
+    e->add_builtin_function("==", equals);
+    e->add_builtin_function("!=", not_equals);
+    e->add_builtin_function(">", ordering_op(">"));
+    e->add_builtin_function("<", ordering_op("<"));
+    e->add_builtin_function(">=", ordering_op(">="));
+    e->add_builtin_function("<=", ordering_op("<="));
+    e->add_builtin_function("if", if_);
 
     // List Functions
-    e->add_builtin("head", head);
-    e->add_builtin("tail", tail);
-    e->add_builtin("list", list);
-    e->add_builtin("eval", eval);
-    e->add_builtin("join", join);
-    e->add_builtin("cons", cons);
-    e->add_builtin("len", len);
-    e->add_builtin("init", init);
+    e->add_builtin_function("head", head);
+    e->add_builtin_function("tail", tail);
+    e->add_builtin_function("list", list);
+    e->add_builtin_function("eval", eval);
+    e->add_builtin_function("join", join);
+    e->add_builtin_function("cons", cons);
+    e->add_builtin_function("len", len);
+    e->add_builtin_function("init", init);
 
     // String functions
-    e->add_builtin("load", load);
-    e->add_builtin("print", print);
-    e->add_builtin("error", make_error);
-    e->add_builtin("read", read);
-    e->add_builtin("show", show);
+    e->add_builtin_function("load", load);
+    e->add_builtin_function("print", print);
+    e->add_builtin_function("error", make_error);
+    e->add_builtin_function("read", read);
+    e->add_builtin_function("show", show);
 
     // Atoms
     lval *True = new lval(true);
@@ -526,18 +527,37 @@ lval *init(lenv *e, lval *a) {
 lval *var(lenv *e, lval *a, const string &func) {
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE(func, a, *begin, lval_type::qexpr)
+    if ((*begin)->type == lval_type::sexpr) {
+        *begin = lval::eval_sexpr(e, *begin);
+    }
 
-    auto syms = *begin;
-    for (auto cell: syms->cells) {
-        LASSERT(a, cell->type == lval_type::symbol,
-                lerr::cant_define_non_sym(func, cell->type))
+    LASSERT_TYPE2(func, a, *begin, lval_type::symbol, lval_type::qexpr)
+
+    lval *syms;
+
+    if ((*begin)->type == lval_type::qexpr) {
+        syms = *begin;
+        for (auto cell: syms->cells) {
+            LASSERT(a, cell->type == lval_type::symbol,
+                    lerr::cant_define_non_sym(func, cell->type))
+        }
+    } else {
+        *begin = lval::qexpr({*begin});
+        syms = *begin;
     }
 
     LASSERT(a, syms->cells.size() == a->cells.size() - 1,
             lerr::cant_define_mismatched_values(func));
 
-    auto val_it = ++begin;
+    syms = a->pop_first();
+    a = lval::eval_cells(e, a);
+
+    if (a->type == lval_type::error) {
+        delete syms;
+        return a;
+    }
+
+    auto val_it = a->cells.begin();
     for (auto sym_it = syms->cells.begin(); sym_it != syms->cells.end();
          ++sym_it, ++val_it) {
         if (func == "def") {
@@ -548,6 +568,7 @@ lval *var(lenv *e, lval *a, const string &func) {
     }
 
     delete a;
+    delete syms;
     return lval::sexpr();
 }
 
@@ -555,26 +576,33 @@ lval *def(lenv *e, lval *a) { return var(e, a, "def"); }
 
 lval *put(lenv *e, lval *a) { return var(e, a, "="); }
 
-lval *lambda(lenv *e, lval *a) {
-    LASSERT_NUM_ARGS("\\", a, 2)
+lval *lambda(lenv *e, lval *a, const string &func) {
+    LASSERT_NUM_ARGS(func, a, 2)
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE("\\", a, *begin, lval_type::qexpr)
+    LASSERT_TYPE(func, a, *begin, lval_type::qexpr)
     ++begin;
-    LASSERT_TYPE("\\", a, *begin, lval_type::qexpr)
+    LASSERT_TYPE(func, a, *begin, lval_type::qexpr)
 
     auto syms = a->cells.front();
     for (auto cell: syms->cells) {
         LASSERT(a, cell->type == lval_type::symbol,
-                lerr::cant_define_non_sym("\\", cell->type))
+                lerr::cant_define_non_sym(func, cell->type))
     }
 
     auto formals = a->pop_first();
     auto body = a->pop_first();
     delete a;
 
-    return new lval(formals, body);
+    if (func == "\\")
+        return lval::function(formals, body);
+    else
+        return lval::macro(formals, body);
 }
+
+lval *func_lambda(lenv *e, lval *a) { return lambda(e, a, "\\"); }
+
+lval *macro_lambda(lenv *e, lval *a) { return lambda(e, a, "\\!"); }
 
 lval *load(lenv *e, lval *a) {
     LASSERT_NUM_ARGS("load", a, 1)

@@ -16,7 +16,8 @@ void add_builtins(lenv *env);
 // Variable functions
 lval *def(lenv *env, lval *args);
 lval *put(lenv *env, lval *args);
-lval *lambda(lenv *env, lval *args);
+lval *func_lambda(lenv *env, lval *args);
+lval *macro_lambda(lenv *env, lval *args);
 
 // Operators
 lbuiltin ope(const std::string &op);
