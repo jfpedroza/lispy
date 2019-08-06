@@ -116,7 +116,8 @@ void add_builtins(lenv *e) {
     // Variable functions
     e->add_builtin_macro("def", def);
     e->add_builtin_macro("=", put);
-    e->add_builtin_function("\\", lambda);
+    e->add_builtin_function("\\", func_lambda);
+    e->add_builtin_function("\\!", macro_lambda);
 
     // Math functions
     e->add_builtin_function("+", ope("+"));
@@ -575,26 +576,33 @@ lval *def(lenv *e, lval *a) { return var(e, a, "def"); }
 
 lval *put(lenv *e, lval *a) { return var(e, a, "="); }
 
-lval *lambda(lenv *e, lval *a) {
-    LASSERT_NUM_ARGS("\\", a, 2)
+lval *lambda(lenv *e, lval *a, const string &func) {
+    LASSERT_NUM_ARGS(func, a, 2)
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE("\\", a, *begin, lval_type::qexpr)
+    LASSERT_TYPE(func, a, *begin, lval_type::qexpr)
     ++begin;
-    LASSERT_TYPE("\\", a, *begin, lval_type::qexpr)
+    LASSERT_TYPE(func, a, *begin, lval_type::qexpr)
 
     auto syms = a->cells.front();
     for (auto cell: syms->cells) {
         LASSERT(a, cell->type == lval_type::symbol,
-                lerr::cant_define_non_sym("\\", cell->type))
+                lerr::cant_define_non_sym(func, cell->type))
     }
 
     auto formals = a->pop_first();
     auto body = a->pop_first();
     delete a;
 
-    return lval::function(formals, body);
+    if (func == "\\")
+        return lval::function(formals, body);
+    else
+        return lval::macro(formals, body);
 }
+
+lval *func_lambda(lenv *e, lval *a) { return lambda(e, a, "\\"); }
+
+lval *macro_lambda(lenv *e, lval *a) { return lambda(e, a, "\\!"); }
 
 lval *load(lenv *e, lval *a) {
     LASSERT_NUM_ARGS("load", a, 1)

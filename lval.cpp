@@ -279,8 +279,8 @@ lval *lval::call(lenv *e, lval *a) {
             auto nsym = formals->pop_first();
 
             if (this->type == lval_type::macro) {
-                for (auto& cell: a->cells) {
-                    cell = lval::qexpr({ cell });
+                for (auto &cell: a->cells) {
+                    cell = lval::qexpr({cell});
                 }
             }
 
@@ -497,11 +497,18 @@ ostream &operator<<(ostream &os, const lval &value) {
             return value.print_str(os);
 
         case lval_type::func:
-        case lval_type::macro:
             if (value.builtin) {
-                return os << "<builtin>";
+                return os << "<builtin function>";
             } else {
                 return os << "(\\ " << *value.formals << ' ' << *value.body
+                          << ')';
+            }
+            break;
+        case lval_type::macro:
+            if (value.builtin) {
+                return os << "<builtin macro>";
+            } else {
+                return os << "(\\! " << *value.formals << ' ' << *value.body
                           << ')';
             }
             break;
