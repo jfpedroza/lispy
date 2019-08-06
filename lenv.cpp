@@ -1,18 +1,16 @@
-#include <string>
 #include "lenv.hpp"
+#include <algorithm>
 #include "lval.hpp"
 #include "lval_error.hpp"
 
 using std::string;
+using std::vector;
 auto error = lval::error;
 
-lenv::lenv() {
-    this->parent = nullptr;
-}
+lenv::lenv() { this->parent = nullptr; }
 
-lenv::lenv(const lenv &other) {
+lenv::lenv(const lenv &other): symbols(table_type(other.symbols)) {
     this->parent = other.parent;
-    this->symbols = table_type(other.symbols);
     for (auto it = this->symbols.begin(); it != this->symbols.end(); ++it) {
         it->second = new lval(it->second);
     }
@@ -26,7 +24,30 @@ lenv::~lenv() {
     }
 }
 
-lval* lenv::get(const string &sym) const {
+vector<string> lenv::keys() const {
+    vector<string> keys;
+    keys.reserve(symbols.size());
+    std::transform(symbols.begin(), symbols.end(), std::back_inserter(keys),
+                   [](auto it) { return it.first; });
+    return keys;
+}
+
+vector<const string *> lenv::keys(const string &prefix) const {
+    vector<const string *> keys;
+    keys.reserve(symbols.size());
+
+    for (auto it = symbols.begin(); it != symbols.end(); ++it) {
+        auto &sym = it->first;
+        if (prefix.size() <= sym.size() &&
+            std::equal(prefix.begin(), prefix.end(), sym.begin())) {
+            keys.push_back(&sym);
+        }
+    }
+
+    return keys;
+}
+
+lval *lenv::get(const string &sym) const {
     auto it = symbols.find(sym);
     if (it != symbols.end()) {
         return new lval(it->second);
@@ -56,6 +77,10 @@ void lenv::def(const string &sym, const lval *const v) {
     e->put(sym, v);
 }
 
-void lenv::add_builtin(const string &name, lbuiltin func) {
-    symbols.insert(std::make_pair(name, new lval(func)));
+void lenv::add_builtin_function(const string &name, lbuiltin func) {
+    symbols.insert(std::make_pair(name, lval::function(func)));
+}
+
+void lenv::add_builtin_macro(const string &name, lbuiltin func) {
+    symbols.insert(std::make_pair(name, lval::macro(func)));
 }
