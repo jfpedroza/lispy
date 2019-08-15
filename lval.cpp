@@ -34,6 +34,8 @@ ostream &operator<<(ostream &os, const lval_type &type) {
             return os << "S-Expression";
         case lval_type::qexpr:
             return os << "Q-Expression";
+        case lval_type::command:
+            return os << "Command";
         default:
             return os << "Unknown";
     }
@@ -118,6 +120,9 @@ lval::lval(const lval &other) {
         case lval_type::string:
             this->str = other.str;
             break;
+        case lval_type::command:
+            this->sym = other.sym;
+            break;
         case lval_type::func:
         case lval_type::macro:
             if (other.builtin) {
@@ -144,6 +149,12 @@ lval::lval(const lval *const other): lval(*other) {}
 
 lval *lval::symbol(string sym) {
     auto val = new lval(lval_type::symbol);
+    val->sym = sym;
+    return val;
+}
+
+lval *lval::command(string sym) {
+    auto val = new lval(lval_type::command);
     val->sym = sym;
     return val;
 }
@@ -366,6 +377,7 @@ lval *lval::read(mpc_ast_t *t) {
     if (strstr(t->tag, "decimal")) return read_decimal(t);
     if (strstr(t->tag, "string")) return read_string(t);
     if (strstr(t->tag, "symbol")) return lval::symbol(t->contents);
+    if (strstr(t->tag, "cname")) return lval::command(t->contents);
 
     lval *x = nullptr;
     if (strcmp(t->tag, ">") == 0 || strstr(t->tag, "sexpr")) {
@@ -491,6 +503,7 @@ ostream &operator<<(ostream &os, const lval &value) {
             return os << (value.boolean ? "true" : "false");
 
         case lval_type::symbol:
+        case lval_type::command:
             return os << value.sym;
 
         case lval_type::string:
@@ -560,6 +573,7 @@ bool lval::operator==(const lval &other) const {
         case lval_type::error:
             return this->err == other.err;
         case lval_type::symbol:
+        case lval_type::command:
             return this->sym == other.sym;
         case lval_type::string:
             return this->str == other.str;

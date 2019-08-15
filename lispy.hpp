@@ -38,6 +38,7 @@ class lispy {
     mpc_parser_t *qexpr_parser;
     mpc_parser_t *expr_parser;
     mpc_parser_t *comment_parser;
+    mpc_parser_t *command_parser;
     mpc_parser_t *lispy_parser;
 
     // Command line arguments parsing

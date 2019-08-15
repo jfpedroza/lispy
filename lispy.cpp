@@ -28,11 +28,12 @@ lispy::lispy()
     qexpr_parser = mpc_new("qexpr");
     expr_parser = mpc_new("expr");
     comment_parser = mpc_new("comment");
+    command_parser = mpc_new("cname");
     lispy_parser = mpc_new("lispy");
 
     mpca_lang(MPCA_LANG_DEFAULT, language_grammar, integer_parser,
               decimal_parser, number_parser, symbol_parser, string_parser,
-              sexpr_parser, qexpr_parser, expr_parser, comment_parser,
+              sexpr_parser, qexpr_parser, expr_parser, comment_parser, command_parser,
               lispy_parser);
 
     builtin::add_builtins(&env);
@@ -40,9 +41,9 @@ lispy::lispy()
 }
 
 lispy::~lispy() {
-    mpc_cleanup(10, integer_parser, decimal_parser, number_parser,
+    mpc_cleanup(11, integer_parser, decimal_parser, number_parser,
                 symbol_parser, string_parser, sexpr_parser, qexpr_parser,
-                expr_parser, comment_parser, lispy_parser);
+                expr_parser, comment_parser, command_parser, lispy_parser);
 }
 
 lispy *lispy::instance() { return _instance; }

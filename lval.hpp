@@ -18,6 +18,7 @@ enum class lval_type {
     macro,
     sexpr,
     qexpr,
+    command,
     error
 };
 
@@ -61,6 +62,8 @@ struct lval {
     explicit lval(const lval *const other);
 
     static lval *symbol(std::string err);
+
+    static lval *command(std::string err);
 
     static lval *error(std::string err);
 
