@@ -164,6 +164,10 @@ void add_builtins(lenv *e) {
     delete False;
 }
 
+void add_builtin_commands(lenv *e) {
+    e->add_builtin_command(".clear", repl::clear);
+}
+
 lbuiltin ope(const string &op) {
     using namespace std::placeholders;
     return std::bind(handle_op, _1, _2, op);
@@ -711,4 +715,17 @@ lval *show(lenv *e, lval *a) {
 
     return lval::sexpr();
 }
+
+namespace repl {
+
+lval *clear(lenv *e, lval *a) {
+    LASSERT_NUM_ARGS("clear", a, 0)
+
+    linenoiseClearScreen();
+
+    return lval::sexpr();
+}
+
+} // namespace repl
+
 } // namespace builtin

@@ -33,8 +33,8 @@ lispy::lispy()
 
     mpca_lang(MPCA_LANG_DEFAULT, language_grammar, integer_parser,
               decimal_parser, number_parser, symbol_parser, string_parser,
-              sexpr_parser, qexpr_parser, expr_parser, comment_parser, command_parser,
-              lispy_parser);
+              sexpr_parser, qexpr_parser, expr_parser, comment_parser,
+              command_parser, lispy_parser);
 
     builtin::add_builtins(&env);
     _instance = this;
@@ -71,6 +71,7 @@ int lispy::run(int argc, char *argv[]) {
         }
 
         if ((evals.empty() && files.empty()) || interactive) {
+            builtin::add_builtin_commands(&env);
             run_interactive();
         }
     } catch (TCLAP::ArgException &e) {

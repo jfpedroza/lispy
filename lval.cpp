@@ -24,18 +24,20 @@ ostream &operator<<(ostream &os, const lval_type &type) {
             return os << "Error";
         case lval_type::symbol:
             return os << "Symbol";
+        case lval_type::cname:
+            return os << "Command name";
         case lval_type::string:
             return os << "String";
         case lval_type::func:
             return os << "Function";
         case lval_type::macro:
             return os << "Macro";
+        case lval_type::command:
+            return os << "Command";
         case lval_type::sexpr:
             return os << "S-Expression";
         case lval_type::qexpr:
             return os << "Q-Expression";
-        case lval_type::command:
-            return os << "Command";
         default:
             return os << "Unknown";
     }
@@ -115,16 +117,15 @@ lval::lval(const lval &other) {
             this->err = other.err;
             break;
         case lval_type::symbol:
+        case lval_type::cname:
             this->sym = other.sym;
             break;
         case lval_type::string:
             this->str = other.str;
             break;
-        case lval_type::command:
-            this->sym = other.sym;
-            break;
         case lval_type::func:
         case lval_type::macro:
+        case lval_type::command:
             if (other.builtin) {
                 this->builtin = other.builtin;
             } else {
@@ -153,8 +154,8 @@ lval *lval::symbol(string sym) {
     return val;
 }
 
-lval *lval::command(string sym) {
-    auto val = new lval(lval_type::command);
+lval *lval::cname(string sym) {
+    auto val = new lval(lval_type::cname);
     val->sym = sym;
     return val;
 }
@@ -192,6 +193,12 @@ lval *lval::macro(lval *formals, lval *body) {
     val->formals = formals;
     val->body = body;
     val->env = new lenv();
+    return val;
+}
+
+lval *lval::command(lbuiltin fun) {
+    auto val = new lval(lval_type::command);
+    val->builtin = fun;
     return val;
 }
 
@@ -377,7 +384,7 @@ lval *lval::read(mpc_ast_t *t) {
     if (strstr(t->tag, "decimal")) return read_decimal(t);
     if (strstr(t->tag, "string")) return read_string(t);
     if (strstr(t->tag, "symbol")) return lval::symbol(t->contents);
-    if (strstr(t->tag, "cname")) return lval::command(t->contents);
+    if (strstr(t->tag, "cname")) return lval::cname(t->contents);
 
     lval *x = nullptr;
     if (strcmp(t->tag, ">") == 0 || strstr(t->tag, "sexpr")) {
@@ -398,7 +405,7 @@ lval *lval::read(mpc_ast_t *t) {
 }
 
 lval *lval::eval(lenv *e, lval *v) {
-    if (v->type == lval_type::symbol) {
+    if (v->type == lval_type::symbol || v->type == lval_type::cname) {
         auto x = e->get(v->sym);
         delete v;
         return x;
@@ -415,7 +422,14 @@ lval *lval::eval_sexpr(lenv *e, lval *v) {
     auto begin = v->cells.begin();
     *begin = eval(e, *begin);
 
-    if (v->cells.size() == 1) return take_first(v);
+    if (v->cells.size() == 1) {
+        auto val = take_first(v);
+        if ((*begin)->type == lval_type::command) {
+            return val->call(e, lval::sexpr());
+        }
+
+        return val;
+    }
 
     auto f = v->pop_first();
 
@@ -436,7 +450,8 @@ lval *lval::eval_sexpr(lenv *e, lval *v) {
 
             return result;
         }
-        case lval_type::macro: {
+        case lval_type::macro:
+        case lval_type::command: {
             v->type = lval_type::qexpr;
             auto result = f->call(e, v);
             delete f;
@@ -503,7 +518,7 @@ ostream &operator<<(ostream &os, const lval &value) {
             return os << (value.boolean ? "true" : "false");
 
         case lval_type::symbol:
-        case lval_type::command:
+        case lval_type::cname:
             return os << value.sym;
 
         case lval_type::string:
@@ -525,6 +540,8 @@ ostream &operator<<(ostream &os, const lval &value) {
                           << ')';
             }
             break;
+        case lval_type::command:
+            return os << "<command>";
         case lval_type::error:
             return os << "Error: " << value.err;
 
@@ -573,13 +590,14 @@ bool lval::operator==(const lval &other) const {
         case lval_type::error:
             return this->err == other.err;
         case lval_type::symbol:
-        case lval_type::command:
+        case lval_type::cname:
             return this->sym == other.sym;
         case lval_type::string:
             return this->str == other.str;
 
         case lval_type::func:
         case lval_type::macro:
+        case lval_type::command:
             if (this->builtin && other.builtin) {
                 auto a = this->builtin.target<lval *(*)(lenv *, lval *)>();
                 auto b = other.builtin.target<lval *(*)(lenv *, lval *)>();
