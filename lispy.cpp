@@ -133,10 +133,6 @@ void lispy::run_interactive() {
         char *input = linenoise(prompt);
         if (!input)
             break;
-        else if (*input == '\0') {
-            free(input);
-            break;
-        }
 
         linenoiseHistoryAdd(input);
 
@@ -165,6 +161,7 @@ void lispy::run_interactive() {
 bool lispy::process_interactive_result(lval *result) {
     if (flags & LISPY_FLAG_CLEAR_OUTPUT) {
         linenoiseClearScreen();
+        flags &= ~LISPY_FLAG_CLEAR_OUTPUT;
         return false;
     }
 

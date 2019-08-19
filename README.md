@@ -13,6 +13,9 @@ C++ implementation of a Lisp programming language from the [Build your own Lisp]
 * [ ] Infinite lists
 * [ ] Maps
 * [ ] User defined types
-* [ ] REPL Commands (exit, printenv, clear)
+* [ ] REPL Commands
+  * [ ] quit
+  * [X] printenv
+  * [X] clear
 * [ ] Multiline input in REPL (with \ at the end of line)
 * [ ] Hints for some built-in functions (Linenoise)

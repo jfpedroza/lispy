@@ -166,6 +166,7 @@ void add_builtins(lenv *e) {
 
 void add_builtin_commands(lenv *e) {
     e->add_builtin_command(".clear", repl::clear);
+    e->add_builtin_command(".printenv", repl::print_env);
 }
 
 lbuiltin ope(const string &op) {
@@ -724,6 +725,18 @@ lval *clear(lenv *e, lval *a) {
     auto lspy = lispy::instance();
     lspy->flags |= LISPY_FLAG_CLEAR_OUTPUT;
 
+    return lval::sexpr();
+}
+
+lval *print_env(lenv *e, lval *a) {
+    LASSERT_NUM_ARGS("printenv", a, 0)
+    for (auto entry: e->symbols) {
+        cout << entry.first << ": " << *entry.second << "\n";
+    }
+
+    cout << std::endl;
+
+    delete a;
     return lval::sexpr();
 }
 
