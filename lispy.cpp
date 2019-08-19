@@ -165,6 +165,7 @@ void lispy::run_interactive() {
 bool lispy::process_interactive_result(lval *result) {
     if (flags & LISPY_FLAG_CLEAR_OUTPUT) {
         linenoiseClearScreen();
+        flags &= ~LISPY_FLAG_CLEAR_OUTPUT;
         return false;
     }
 
