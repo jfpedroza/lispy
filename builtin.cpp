@@ -721,7 +721,8 @@ namespace repl {
 lval *clear(lenv *e, lval *a) {
     LASSERT_NUM_ARGS("clear", a, 0)
 
-    linenoiseClearScreen();
+    auto lspy = lispy::instance();
+    lspy->flags |= LISPY_FLAG_CLEAR_OUTPUT;
 
     return lval::sexpr();
 }

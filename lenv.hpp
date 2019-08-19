@@ -21,9 +21,11 @@ struct lenv {
 
     std::vector<std::string> keys() const;
     std::vector<const std::string *> keys(const std::string &prefix) const;
+
     lval *get(const std::string &sym) const;
     void put(const std::string &sym, const lval *const val);
     void def(const std::string &sym, const lval *const val);
+
     void add_builtin_function(const std::string &name, lbuiltin func);
     void add_builtin_macro(const std::string &name, lbuiltin func);
     void add_builtin_command(const std::string &name, lbuiltin func);
