@@ -167,6 +167,7 @@ void add_builtins(lenv *e) {
 void add_builtin_commands(lenv *e) {
     e->add_builtin_command(".clear", repl::clear);
     e->add_builtin_command(".printenv", repl::print_env);
+    e->add_builtin_command(".quit", repl::quit);
 }
 
 lbuiltin ope(const string &op) {
@@ -737,6 +738,15 @@ lval *print_env(lenv *e, lval *a) {
     cout << std::endl;
 
     delete a;
+    return lval::sexpr();
+}
+
+lval *quit(lenv *e, lval *a) {
+    LASSERT_NUM_ARGS("quit", a, 0)
+
+    auto lspy = lispy::instance();
+    lspy->flags |= LISPY_FLAG_EXIT;
+
     return lval::sexpr();
 }
 

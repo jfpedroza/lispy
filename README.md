@@ -13,8 +13,8 @@ C++ implementation of a Lisp programming language from the [Build your own Lisp]
 * [ ] Infinite lists
 * [ ] Maps
 * [ ] User defined types
-* [ ] REPL Commands
-  * [ ] quit
+* [X] REPL Commands
+  * [X] quit
   * [X] printenv
   * [X] clear
 * [ ] Multiline input in REPL (with \ at the end of line)

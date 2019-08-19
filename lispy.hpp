@@ -9,6 +9,7 @@
 #define LISPY_NO_FLAGS 0x0
 #define LISPY_FLAG_INTERACTIVE 0x1
 #define LISPY_FLAG_CLEAR_OUTPUT 0x2
+#define LISPY_FLAG_EXIT 0x4
 
 class lispy {
    public:

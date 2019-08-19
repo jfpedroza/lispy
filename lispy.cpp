@@ -165,6 +165,10 @@ bool lispy::process_interactive_result(lval *result) {
         return false;
     }
 
+    if (flags & LISPY_FLAG_EXIT) {
+        return true;
+    }
+
     cout << *result << endl;
     return false;
 }

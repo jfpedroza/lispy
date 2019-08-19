@@ -65,6 +65,7 @@ lval *show(lenv *env, lval *args);
 namespace repl {
 lval *clear(lenv *env, lval *args);
 lval *print_env(lenv *env, lval *args);
+lval *quit(lenv *env, lval *args);
 } // namespace repl
 } // namespace builtin
 
