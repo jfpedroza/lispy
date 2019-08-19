@@ -1,0 +1,193 @@
+; Atoms
+(def nil {})
+
+; Function definition
+(def fun (\! {name args body} {
+  def (name) (\ (eval args) (eval body))
+}))
+
+; Macro definition
+(def fun! (\! {name args body} {
+  def (name) (\! (eval args) (eval body))
+}))
+
+; Unpack list for function
+(fun unpack {f xs} {
+  eval (cons f xs)
+})
+
+; Pack list for function
+(fun pack {f & xs} {f xs})
+
+; Curried and uncurried calling
+(def uncurry pack)
+(def curry unpack)
+
+; Perform several things in sequence
+(fun do {& l} {
+  if (== l nil)
+    {nil}
+    {last l}
+})
+
+; Open a new scope
+(fun let {body} {
+  ((\ {_} body) ())
+})
+
+; Selects the first item that is true
+(fun select {& cs} {
+  if (== cs nil)
+    {error "No selection found"}
+    { if (fst (fst cs))
+      {snd (fst cs)}
+      {unpack select (tail cs)}
+    }
+})
+
+; Default case
+(def otherwise true)
+
+; Matches the argument against all the values
+(fun case {x & xs} {
+  if (== xs nil)
+    {error "No case found"}
+    { if (== x (fst (fst xs)))
+      {snd (fst xs)}
+      {unpack case (cons x (tail xs))}
+    }
+})
+
+; Logical functions
+(fun and {x y} { if x {y} {false} })
+(fun or {x y} { if x {true} {y} })
+(fun not {x} { == x false })
+
+; Miscellaneous functions
+; Flip the first two arguments
+(fun flip {f x y & xs} {
+  unpack f (join {y x} xs)
+})
+
+; Just evaluates its arguments
+(fun ghost {& xs} {eval xs})
+
+; Function composition
+(fun comp {f g x & xs} {
+  f (unpack g (cons x xs))
+})
+
+; List finctions
+; First, second, or third item in iist
+(fun fst {l} {eval (head l)})
+(fun snd {l} {eval (head (tail l))})
+(fun trd {l} {eval (head (tail (tail l)))})
+
+; Nth item of a list
+(fun nth {n l} {
+  if (== n 0)
+    {fst l}
+    {nth (- n 1) (tail l)}
+})
+
+; Last item of a list
+(fun last {l} {nth (- (len l) 1) l})
+
+; Take N items
+(fun take {n l} {
+  if (== l nil)
+    {nil}
+    { if (== n 0)
+      {nil}
+      {join (head l) (take (- n 1) (tail l))}
+    }
+})
+
+; Drop N items
+(fun drop {n l} {
+  if (== l nil)
+    {nil}
+    { if (== n 0)
+      {l}
+      {drop (- n 1) (tail l)}
+    }
+})
+
+; Split at N
+(fun split {n l} {list (take n l) (drop n l)})
+
+; Check if element is in list
+(fun elem {x l} {
+  if (== l nil)
+    {false}
+    { if (== x (fst l))
+      {true}
+      {elem x (tail l)}
+    }
+})
+
+; Apply function to list
+(fun map {f l} {
+  if (== l nil)
+    {nil}
+    {cons (f (fst l)) (map f (tail l))}
+})
+
+; Apply filter to list
+(fun filter {p l} {
+  if (== l nil)
+    {nil}
+    { if (p (fst l))
+      {cons (fst l) (filter p (tail l))}
+      {filter p (tail l)}
+    }
+})
+
+; Fold to the left
+(fun foldl {f acc l} {
+  if (== l nil)
+    {acc}
+    {foldl f (f acc (fst l)) (tail l)}
+})
+
+; Fold to the right
+(fun foldr {f acc l} {
+  if (== l nil)
+    {acc}
+    {foldr f (f (fst l) acc) (tail l)}
+})
+
+; Reverse of a list
+(fun reverse {l} {
+  if (== l nil)
+    {nil}
+    {join (reverse (tail l)) (head l)}
+})
+
+; Calculates the sum of a list
+(def sum (unpack +))
+
+; Calculates the product of a list
+(def product (unpack *))
+
+; Fibonacci
+(fun fib {n} {
+  select
+    { (== n 0) 0 }
+    { (== n 1) 1 }
+    { otherwise (+ (fib (- n 1)) (fib (- n 2))) }
+})
+
+; Wheather a number is even
+(fun even {n} {== (% n 2) 0})
+
+; Wheather a number is odd
+(fun odd {n} {not (even n)})
+
+; Comparison function wrappers to allow partial application
+(fun eq {x y} {== x y})
+(fun ne {x y} {!= x y})
+(fun gt {x y} {> x y})
+(fun lt {x y} {< x y})
+(fun ge {x y} {>= x y})
+(fun le {x y} {<= x y})

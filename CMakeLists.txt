@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(Lispy VERSION 0.0.7)
+project(Lispy VERSION 0.4.0)
 
 include(CTest)
 enable_testing()
@@ -14,6 +14,7 @@ configure_file(
 
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}/mpc")
+include_directories("${PROJECT_SOURCE_DIR}/tclap/include")
 add_subdirectory(mpc)
 
 add_executable(gen_headers gen_headers.cpp)
@@ -21,12 +22,12 @@ add_executable(gen_headers gen_headers.cpp)
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated.hpp
   COMMAND gen_headers ${CMAKE_CURRENT_BINARY_DIR}/generated.hpp
-  DEPENDS gen_headers language.txt
+  DEPENDS gen_headers language.txt prelude.lspy
   )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-add_executable(lispy main.cpp lval.cpp lval_error.cpp builtin.cpp lenv.cpp ${CMAKE_CURRENT_BINARY_DIR}/generated.hpp)
-target_link_libraries(lispy edit MPC)
+add_executable(lispy main.cpp lispy.cpp lval.cpp lval_error.cpp builtin.cpp lenv.cpp ${CMAKE_CURRENT_BINARY_DIR}/generated.hpp)
+target_link_libraries(lispy linenoise MPC)
 
 install(TARGETS lispy)

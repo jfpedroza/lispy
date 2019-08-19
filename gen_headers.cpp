@@ -1,33 +1,49 @@
 #include <fstream>
 #include <sstream>
+#include <string>
 
+using std::endl;
 using std::ifstream;
 using std::ofstream;
+using std::string;
 using std::stringstream;
-using std::endl;
 
-int main(int argc, char* argv[]) {
-    if (argc < 2) return 1;
-
-    ifstream language("../language.txt");
-    if (!language.good()) return 1;
+bool write_file(ofstream &out, const string &var_name, const string &filename) {
+    ifstream file(filename);
+    if (!file.good()) return false;
     stringstream ss;
-    ss << language.rdbuf();
-    auto lang = ss.str();
+    ss << file.rdbuf();
+    auto contents = ss.str();
 
-    ofstream out(argv[1]);
-    out << "#ifndef LISPY_GENEATED_HPP\n#define LISPY_GENEATED_HPP\n\n";
+    out << "char " << var_name << "[] = {";
 
-    out << "char language_grammar[] = {";
+    for (size_t i = 0; i < contents.size(); i++) {
+        out << static_cast<uint>(contents[i]);
 
-    for (size_t i = 0; i < lang.size(); i++) {
-        out << static_cast<uint>(lang[i]);
-
-        if (i != lang.size() - 1) {
+        if (i != contents.size() - 1) {
             out << ", ";
         }
     }
 
-    out << "};\n\n";
-    out << "#endif // LISPY_GENEATED_HPP" << endl;
+    out << ", 0};\n\n";
+
+    return true;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) return 1;
+
+    ofstream out(argv[1]);
+    out << "#ifndef LISPY_GENERATED_HPP\n#define LISPY_GENERATED_HPP\n\n";
+
+    if (write_file(out, "language_grammar", "../language.txt")) {
+        if (!write_file(out, "prelude", "../prelude.lspy")) {
+            return 1;
+        }
+    } else {
+        return 1;
+    }
+
+    out << "#endif // LISPY_GENERATED_HPP" << endl;
+    return 0;
 }
