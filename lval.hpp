@@ -13,9 +13,11 @@ enum class lval_type {
     number,
     boolean,
     symbol,
+    cname,
     string,
     func,
     macro,
+    command,
     sexpr,
     qexpr,
     error
@@ -62,6 +64,8 @@ struct lval {
 
     static lval *symbol(std::string err);
 
+    static lval *cname(std::string err);
+
     static lval *error(std::string err);
 
     static lval *function(lbuiltin fun);
@@ -71,6 +75,8 @@ struct lval {
     static lval *macro(lbuiltin fun);
 
     static lval *macro(lval *formals, lval *body);
+
+    static lval *command(lbuiltin fun);
 
     static lval *sexpr();
 
