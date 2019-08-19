@@ -164,6 +164,12 @@ void add_builtins(lenv *e) {
     delete False;
 }
 
+void add_builtin_commands(lenv *e) {
+    e->add_builtin_command(".clear", repl::clear);
+    e->add_builtin_command(".printenv", repl::print_env);
+    e->add_builtin_command(".quit", repl::quit);
+}
+
 lbuiltin ope(const string &op) {
     using namespace std::placeholders;
     return std::bind(handle_op, _1, _2, op);
@@ -711,4 +717,39 @@ lval *show(lenv *e, lval *a) {
 
     return lval::sexpr();
 }
+
+namespace repl {
+
+lval *clear(lenv *e, lval *a) {
+    LASSERT_NUM_ARGS("clear", a, 0)
+
+    auto lspy = lispy::instance();
+    lspy->flags |= LISPY_FLAG_CLEAR_OUTPUT;
+
+    return lval::sexpr();
+}
+
+lval *print_env(lenv *e, lval *a) {
+    LASSERT_NUM_ARGS("printenv", a, 0)
+    for (auto entry: e->symbols) {
+        cout << entry.first << ": " << *entry.second << "\n";
+    }
+
+    cout << std::endl;
+
+    delete a;
+    return lval::sexpr();
+}
+
+lval *quit(lenv *e, lval *a) {
+    LASSERT_NUM_ARGS("quit", a, 0)
+
+    auto lspy = lispy::instance();
+    lspy->flags |= LISPY_FLAG_EXIT;
+
+    return lval::sexpr();
+}
+
+} // namespace repl
+
 } // namespace builtin

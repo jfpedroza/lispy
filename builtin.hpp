@@ -12,6 +12,7 @@ using lbuiltin = std::function<lval *(lenv *, lval *)>;
 namespace builtin {
 
 void add_builtins(lenv *env);
+void add_builtin_commands(lenv *env);
 
 // Variable functions
 lval *def(lenv *env, lval *args);
@@ -59,6 +60,13 @@ lval *make_error(lenv *env, lval *args);
 lval *read(lenv *env, lval *args);
 lval *read_file(lenv *env, lval *args, const std::string &filename);
 lval *show(lenv *env, lval *args);
+
+// REPL commands
+namespace repl {
+lval *clear(lenv *env, lval *args);
+lval *print_env(lenv *env, lval *args);
+lval *quit(lenv *env, lval *args);
+} // namespace repl
 } // namespace builtin
 
 #endif // LISPY_BUILTIN_HPP

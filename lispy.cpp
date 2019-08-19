@@ -13,7 +13,8 @@ using std::vector;
 lispy *lispy::_instance = nullptr;
 
 lispy::lispy()
-    : cmd_line("The Lispy interpreter", ' ', LISPY_VERSION),
+    : flags(LISPY_NO_FLAGS),
+      cmd_line("The Lispy interpreter", ' ', LISPY_VERSION),
       interactive_arg("i", "interactive",
                       "Run REPL, even when -e is present or files are given",
                       false),
@@ -28,21 +29,22 @@ lispy::lispy()
     qexpr_parser = mpc_new("qexpr");
     expr_parser = mpc_new("expr");
     comment_parser = mpc_new("comment");
+    command_parser = mpc_new("cname");
     lispy_parser = mpc_new("lispy");
 
     mpca_lang(MPCA_LANG_DEFAULT, language_grammar, integer_parser,
               decimal_parser, number_parser, symbol_parser, string_parser,
               sexpr_parser, qexpr_parser, expr_parser, comment_parser,
-              lispy_parser);
+              command_parser, lispy_parser);
 
     builtin::add_builtins(&env);
     _instance = this;
 }
 
 lispy::~lispy() {
-    mpc_cleanup(10, integer_parser, decimal_parser, number_parser,
+    mpc_cleanup(11, integer_parser, decimal_parser, number_parser,
                 symbol_parser, string_parser, sexpr_parser, qexpr_parser,
-                expr_parser, comment_parser, lispy_parser);
+                expr_parser, comment_parser, command_parser, lispy_parser);
 }
 
 lispy *lispy::instance() { return _instance; }
@@ -70,10 +72,13 @@ int lispy::run(int argc, char *argv[]) {
         }
 
         if ((evals.empty() && files.empty()) || interactive) {
+            flags |= LISPY_FLAG_INTERACTIVE;
+            builtin::add_builtin_commands(&env);
             run_interactive();
         }
     } catch (TCLAP::ArgException &e) {
         cerr << "Error: " << e.error() << " for arg " << e.argId() << endl;
+        return 1;
     }
 
     return 0;
@@ -128,10 +133,6 @@ void lispy::run_interactive() {
         char *input = linenoise(prompt);
         if (!input)
             break;
-        else if (*input == '\0') {
-            free(input);
-            break;
-        }
 
         linenoiseHistoryAdd(input);
 
@@ -140,9 +141,10 @@ void lispy::run_interactive() {
         if (mpc_parse("<stdin>", input, lispy_parser, &r)) {
             lval *result = lval::read((mpc_ast_t *)r.output);
             result = lval::eval(&env, result);
-            cout << *result << endl;
+            bool break_loop = process_interactive_result(result);
             delete result;
             mpc_ast_delete((mpc_ast_t *)r.output);
+            if (break_loop) break;
         } else {
             /* Otherwise Print the Error */
             mpc_err_print(r.error);
@@ -154,6 +156,21 @@ void lispy::run_interactive() {
 
     cout << "\nBye" << endl;
     linenoiseHistoryFree();
+}
+
+bool lispy::process_interactive_result(lval *result) {
+    if (flags & LISPY_FLAG_CLEAR_OUTPUT) {
+        linenoiseClearScreen();
+        flags &= ~LISPY_FLAG_CLEAR_OUTPUT;
+        return false;
+    }
+
+    if (flags & LISPY_FLAG_EXIT) {
+        return true;
+    }
+
+    cout << *result << endl;
+    return false;
 }
 
 bool lispy::load_files(const vector<string> &files) {

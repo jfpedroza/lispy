@@ -84,3 +84,7 @@ void lenv::add_builtin_function(const string &name, lbuiltin func) {
 void lenv::add_builtin_macro(const string &name, lbuiltin func) {
     symbols.insert(std::make_pair(name, lval::macro(func)));
 }
+
+void lenv::add_builtin_command(const string &name, lbuiltin func) {
+    symbols.insert(std::make_pair(name, lval::command(func)));
+}
