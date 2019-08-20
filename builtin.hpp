@@ -53,13 +53,16 @@ lval *cons(lenv *env, lval *args);
 lval *len(lenv *env, lval *args);
 lval *init(lenv *env, lval *args);
 
-// String funtions
+// String functions
 lval *load(lenv *env, lval *args);
 lval *print(lenv *env, lval *args);
 lval *make_error(lenv *env, lval *args);
 lval *read(lenv *env, lval *args);
 lval *read_file(lenv *env, lval *args, const std::string &filename);
 lval *show(lenv *env, lval *args);
+
+// System functions
+lval *exit(lenv *env, lval *args);
 
 // REPL commands
 namespace repl {

@@ -25,13 +25,14 @@ class lispy {
 
    private:
     lenv env;
+    int exit_code;
     static lispy *_instance;
 
     bool load_prelude();
     void run_interactive();
-    bool process_interactive_result(lval *result);
     bool load_files(const std::vector<std::string> &files);
     bool eval_strings(const std::vector<std::string> &strings);
+    bool process_result(lval *result);
 
     friend void completion_hook(char const *prefix, linenoiseCompletions *lc);
 
