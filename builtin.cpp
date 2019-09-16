@@ -627,7 +627,10 @@ lval *load(lenv *e, lval *a) {
         while (!expr->cells.empty()) {
             auto x = lval::eval(e, expr->pop_first());
             if (x->type == lval_type::error) {
-                cout << *x << endl;
+                delete expr;
+                delete a;
+
+                return x;
             }
 
             delete x;

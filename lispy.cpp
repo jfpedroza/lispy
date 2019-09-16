@@ -169,7 +169,7 @@ bool lispy::process_result(lval *result) {
         if (result->type == lval_type::error) {
             exit_code = result->integ;
             if (result->err != "") {
-                cout << "Exiting with message \"" << result->err << "\"" << endl;
+                cout << "Exiting with message: " << result->err << endl;
             }
         }
 
@@ -180,27 +180,32 @@ bool lispy::process_result(lval *result) {
         cout << *result << endl;
     }
 
-    return true;
-}
-
-bool lispy::load_files(const vector<string> &files) {
-    for (auto file: files) {
-        lval *args = lval::sexpr({new lval(file)});
-        lval *x = builtin::load(&env, args);
-
-        if (x->type == lval_type::error) {
-            cout << *x << endl;
-            delete x;
-            return false;
-        }
-
-        delete x;
+    if (result->type == lval_type::error && flags & LISPY_FLAG_FAIL_ON_ERROR) {
+        return false;
     }
 
     return true;
 }
 
+bool lispy::load_files(const vector<string> &files) {
+    flags |= LISPY_FLAG_FAIL_ON_ERROR;
+
+    for (auto file: files) {
+        lval *args = lval::sexpr({new lval(file)});
+        lval *x = builtin::load(&env, args);
+
+        bool cont = process_result(x);
+        delete x;
+        if (!cont) return false;
+    }
+
+    flags &= ~LISPY_FLAG_FAIL_ON_ERROR;
+    return true;
+}
+
 bool lispy::eval_strings(const vector<string> &strings) {
+    flags |= LISPY_FLAG_FAIL_ON_ERROR;
+
     for (auto str: strings) {
         lval *args = lval::sexpr({new lval(str)});
         lval *expr = builtin::read(&env, args);
@@ -208,19 +213,17 @@ bool lispy::eval_strings(const vector<string> &strings) {
         if (expr->type == lval_type::error) {
             cout << *expr << endl;
             delete expr;
+            exit_code = 1;
             return false;
         }
 
         auto x = lval::eval_qexpr(&env, expr);
-        cout << *x << endl;
 
-        if (x->type == lval_type::error) {
-            delete x;
-            return false;
-        }
-
+        bool cont = process_result(x);
         delete x;
+        if (!cont) return false;
     }
 
+    flags &= ~LISPY_FLAG_FAIL_ON_ERROR;
     return true;
 }

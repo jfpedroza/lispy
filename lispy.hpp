@@ -10,6 +10,7 @@
 #define LISPY_FLAG_INTERACTIVE 0x1
 #define LISPY_FLAG_CLEAR_OUTPUT 0x2
 #define LISPY_FLAG_EXIT 0x4
+#define LISPY_FLAG_FAIL_ON_ERROR 0x8
 
 class lispy {
    public:
