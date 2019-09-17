@@ -10,6 +10,7 @@
 #define LISPY_FLAG_INTERACTIVE 0x1
 #define LISPY_FLAG_CLEAR_OUTPUT 0x2
 #define LISPY_FLAG_EXIT 0x4
+#define LISPY_FLAG_FAIL_ON_ERROR 0x8
 
 class lispy {
    public:
@@ -25,13 +26,14 @@ class lispy {
 
    private:
     lenv env;
+    int exit_code;
     static lispy *_instance;
 
     bool load_prelude();
     void run_interactive();
-    bool process_interactive_result(lval *result);
     bool load_files(const std::vector<std::string> &files);
     bool eval_strings(const std::vector<std::string> &strings);
+    bool process_result(lval *result);
 
     friend void completion_hook(char const *prefix, linenoiseCompletions *lc);
 

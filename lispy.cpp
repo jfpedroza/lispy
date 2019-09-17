@@ -14,6 +14,7 @@ lispy *lispy::_instance = nullptr;
 
 lispy::lispy()
     : flags(LISPY_NO_FLAGS),
+      exit_code(0),
       cmd_line("The Lispy interpreter", ' ', LISPY_VERSION),
       interactive_arg("i", "interactive",
                       "Run REPL, even when -e is present or files are given",
@@ -81,7 +82,7 @@ int lispy::run(int argc, char *argv[]) {
         return 1;
     }
 
-    return 0;
+    return exit_code;
 }
 
 bool lispy::load_prelude() {
@@ -131,8 +132,7 @@ void lispy::run_interactive() {
 
     while (true) {
         char *input = linenoise(prompt);
-        if (!input)
-            break;
+        if (!input) break;
 
         linenoiseHistoryAdd(input);
 
@@ -141,10 +141,10 @@ void lispy::run_interactive() {
         if (mpc_parse("<stdin>", input, lispy_parser, &r)) {
             lval *result = lval::read((mpc_ast_t *)r.output);
             result = lval::eval(&env, result);
-            bool break_loop = process_interactive_result(result);
+            bool cont = process_result(result);
             delete result;
             mpc_ast_delete((mpc_ast_t *)r.output);
-            if (break_loop) break;
+            if (!cont) break;
         } else {
             /* Otherwise Print the Error */
             mpc_err_print(r.error);
@@ -154,43 +154,58 @@ void lispy::run_interactive() {
         free(input);
     }
 
-    cout << "\nBye" << endl;
+    if (exit_code == 0) cout << "\nBye" << endl;
     linenoiseHistoryFree();
 }
 
-bool lispy::process_interactive_result(lval *result) {
+bool lispy::process_result(lval *result) {
     if (flags & LISPY_FLAG_CLEAR_OUTPUT) {
         linenoiseClearScreen();
         flags &= ~LISPY_FLAG_CLEAR_OUTPUT;
-        return false;
-    }
-
-    if (flags & LISPY_FLAG_EXIT) {
         return true;
     }
 
-    cout << *result << endl;
-    return false;
-}
-
-bool lispy::load_files(const vector<string> &files) {
-    for (auto file: files) {
-        lval *args = lval::sexpr({new lval(file)});
-        lval *x = builtin::load(&env, args);
-
-        if (x->type == lval_type::error) {
-            cout << *x << endl;
-            delete x;
-            return false;
+    if (flags & LISPY_FLAG_EXIT) {
+        if (result->type == lval_type::error) {
+            exit_code = result->integ;
+            if (result->err != "") {
+                cout << "Exiting with message: " << result->err << endl;
+            }
         }
 
-        delete x;
+        return false;
+    }
+
+    if (flags & LISPY_FLAG_INTERACTIVE || result->type == lval_type::error) {
+        cout << *result << endl;
+    }
+
+    if (result->type == lval_type::error && flags & LISPY_FLAG_FAIL_ON_ERROR) {
+        return false;
     }
 
     return true;
 }
 
+bool lispy::load_files(const vector<string> &files) {
+    flags |= LISPY_FLAG_FAIL_ON_ERROR;
+
+    for (auto file: files) {
+        lval *args = lval::sexpr({new lval(file)});
+        lval *x = builtin::load(&env, args);
+
+        bool cont = process_result(x);
+        delete x;
+        if (!cont) return false;
+    }
+
+    flags &= ~LISPY_FLAG_FAIL_ON_ERROR;
+    return true;
+}
+
 bool lispy::eval_strings(const vector<string> &strings) {
+    flags |= LISPY_FLAG_FAIL_ON_ERROR;
+
     for (auto str: strings) {
         lval *args = lval::sexpr({new lval(str)});
         lval *expr = builtin::read(&env, args);
@@ -198,19 +213,17 @@ bool lispy::eval_strings(const vector<string> &strings) {
         if (expr->type == lval_type::error) {
             cout << *expr << endl;
             delete expr;
+            exit_code = 1;
             return false;
         }
 
         auto x = lval::eval_qexpr(&env, expr);
-        cout << *x << endl;
 
-        if (x->type == lval_type::error) {
-            delete x;
-            return false;
-        }
-
+        bool cont = process_result(x);
         delete x;
+        if (!cont) return false;
     }
 
+    flags &= ~LISPY_FLAG_FAIL_ON_ERROR;
     return true;
 }

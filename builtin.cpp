@@ -155,6 +155,9 @@ void add_builtins(lenv *e) {
     e->add_builtin_function("read", read);
     e->add_builtin_function("show", show);
 
+    // System functions
+    e->add_builtin_function("exit", exit);
+
     // Atoms
     lval *True = new lval(true);
     lval *False = new lval(false);
@@ -624,7 +627,10 @@ lval *load(lenv *e, lval *a) {
         while (!expr->cells.empty()) {
             auto x = lval::eval(e, expr->pop_first());
             if (x->type == lval_type::error) {
-                cout << *x << endl;
+                delete expr;
+                delete a;
+
+                return x;
             }
 
             delete x;
@@ -658,7 +664,7 @@ lval *print(lenv *e, lval *a) {
 }
 
 lval *make_error(lenv *e, lval *a) {
-    LASSERT_NUM_ARGS("errror", a, 1)
+    LASSERT_NUM_ARGS("error", a, 1)
     auto begin = a->cells.begin();
 
     LASSERT_TYPE("error", a, *begin, lval_type::string)
@@ -716,6 +722,30 @@ lval *show(lenv *e, lval *a) {
     delete a;
 
     return lval::sexpr();
+}
+
+lval *exit(lenv *e, lval *a) {
+    LASSERT_NUM_ARGS("exit", a, 1)
+    auto begin = a->cells.begin();
+
+    LASSERT_TYPE2("exit", a, *begin, lval_type::string, lval_type::integer)
+
+    auto val = lval::take_first(a);
+    lval *err = new lval(lval_type::error);
+    if (val->type == lval_type::integer) {
+        err->integ = val->integ;
+        err->err = "";
+    } else {
+        err->integ = 1;
+        err->err = val->str;
+    }
+
+    auto lspy = lispy::instance();
+    lspy->flags |= LISPY_FLAG_EXIT;
+
+    delete val;
+
+    return err;
 }
 
 namespace repl {
