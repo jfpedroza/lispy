@@ -1,5 +1,5 @@
-#ifndef LVAL_HPP
-#define LVAL_HPP
+#ifndef LVALUE_HPP
+#define LVALUE_HPP
 
 #include <iostream>
 #include <list>
@@ -7,28 +7,26 @@
 #include "builtin.hpp"
 #include "mpc.h"
 
-enum class lval_type {
-    integer,
-    decimal,
-    number,
-    boolean,
-    symbol,
-    cname,
-    string,
-    func,
-    macro,
-    command,
-    sexpr,
-    qexpr,
-    error
-};
-
-std::ostream &operator<<(std::ostream &os, const lval_type &type);
-
 struct LEnv;
 
 struct LValue {
-    lval_type type;
+    enum class Type {
+        integer,
+        decimal,
+        number,
+        boolean,
+        symbol,
+        cname,
+        string,
+        func,
+        macro,
+        command,
+        sexpr,
+        qexpr,
+        error
+    };
+
+    Type type;
 
     long integ;
     double dec;
@@ -48,7 +46,7 @@ struct LValue {
 
     using iter = cell_type::iterator;
 
-    explicit LValue(lval_type type);
+    explicit LValue(Type type);
 
     explicit LValue(long num);
 
@@ -130,4 +128,6 @@ struct LValue {
     bool operator!=(const LValue &other) const;
 };
 
-#endif // LVAL_HPP
+std::ostream &operator<<(std::ostream &os, const LValue::Type &type);
+
+#endif // LVALUE_HPP

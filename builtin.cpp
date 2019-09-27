@@ -3,9 +3,9 @@
 #include <functional>
 #include <iostream>
 #include <unordered_map>
-#include "Lispy.hpp"
 #include "LEnv.hpp"
 #include "LValue.hpp"
+#include "Lispy.hpp"
 #include "lval_error.hpp"
 
 using std::cout;
@@ -14,20 +14,20 @@ using std::string;
 
 #define LVAL_OPERATOR_BASE(X, Y, E1, E2, E3, E4)                               \
     switch (X->type) {                                                         \
-        case lval_type::decimal:                                               \
+        case LValue::Type::decimal:                                            \
             switch (Y->type) {                                                 \
-                case lval_type::decimal:                                       \
+                case LValue::Type::decimal:                                    \
                     E1;                                                        \
-                case lval_type::integer:                                       \
+                case LValue::Type::integer:                                    \
                     E2;                                                        \
                 default:                                                       \
                     return Y;                                                  \
             }                                                                  \
-        case lval_type::integer:                                               \
+        case LValue::Type::integer:                                            \
             switch (Y->type) {                                                 \
-                case lval_type::decimal:                                       \
+                case LValue::Type::decimal:                                    \
                     E3;                                                        \
-                case lval_type::integer:                                       \
+                case LValue::Type::integer:                                    \
                     E4;                                                        \
                 default:                                                       \
                     return Y;                                                  \
@@ -38,14 +38,14 @@ using std::string;
 
 #define LVAL_OPERATOR(OP, X, Y)                                                \
     LVAL_OPERATOR_BASE(X, Y, X->dec OP Y->dec; return X, X->dec OP Y->integ;   \
-                       return X, X->type = lval_type::decimal;                 \
+                       return X, X->type = LValue::Type::decimal;              \
                        X->dec = X->integ; X->dec OP Y->dec;                    \
                        return X, X->integ OP Y->integ; return X)
 
 #define LVAL_BINARY_HANDLER(HANDLER, X, Y)                                     \
     LVAL_OPERATOR_BASE(X, Y, X->dec = HANDLER(X->dec, Y->dec);                 \
                        return X, X->dec = HANDLER(X->dec, Y->integ);           \
-                       return X, X->type = lval_type::decimal;                 \
+                       return X, X->type = LValue::Type::decimal;              \
                        X->dec = HANDLER(X->integ, Y->dec);                     \
                        return X, X->integ = HANDLER(X->integ, Y->integ);       \
                        return X)
@@ -56,13 +56,13 @@ using std::string;
         auto b = Y->B;                                                         \
         delete X;                                                              \
         delete Y;                                                              \
-        return new LValue(a OP b);                                               \
+        return new LValue(a OP b);                                             \
     };                                                                         \
                                                                                \
     return comp();
 
 #define LVAL_COMP_OPERATOR(OP, X, Y)                                           \
-    function<LValue *()> comp;                                                   \
+    function<LValue *()> comp;                                                 \
     LVAL_OPERATOR_BASE(X, Y, LVAL_COMPARISON(OP, X, Y, dec, dec),              \
                        LVAL_COMPARISON(OP, X, Y, dec, integ),                  \
                        LVAL_COMPARISON(OP, X, Y, integ, dec),                  \
@@ -97,9 +97,9 @@ using std::string;
 #define LASSERT_NUMBER(func, args, cell)                                       \
     LASSERT(                                                                   \
         args,                                                                  \
-        (cell)->type == lval_type::integer ||                                  \
-            (cell)->type == lval_type::decimal,                                \
-        lerr::passed_incorrect_type(func, (cell)->type, lval_type::number))
+        (cell)->type == LValue::Type::integer ||                               \
+            (cell)->type == LValue::Type::decimal,                             \
+        lerr::passed_incorrect_type(func, (cell)->type, LValue::Type::number))
 
 namespace builtin {
 
@@ -196,7 +196,7 @@ LValue *handle_op(LEnv *e, LValue *a, const string &op) {
         x = handler(x, y);
         delete y;
 
-        if (x->type == lval_type::error) break;
+        if (x->type == LValue::Type::error) break;
     }
 
     delete a;
@@ -229,7 +229,7 @@ LValue *divide(LValue *x, LValue *y) {
         return x;
     };
     auto e3 = [x, y]() {
-        x->type = lval_type::decimal;
+        x->type = LValue::Type::decimal;
         x->dec = x->integ;
         x->dec /= y->dec;
         return x;
@@ -260,10 +260,10 @@ LValue *power(LValue *x, LValue *y){LVAL_BINARY_HANDLER(pow, x, y)}
 
 LValue *negate(LValue *x) {
     switch (x->type) {
-        case lval_type::decimal:
+        case LValue::Type::decimal:
             x->dec *= -1;
             return x;
-        case lval_type::integer:
+        case LValue::Type::integer:
             x->integ *= -1;
             return x;
         default:
@@ -271,7 +271,8 @@ LValue *negate(LValue *x) {
     }
 }
 
-LValue *min_max(std::function<bool(double, double)> comp, LValue *x, LValue *y) {
+LValue *min_max(std::function<bool(double, double)> comp, LValue *x,
+                LValue *y) {
     auto e1 = [x, y]() {
         x->dec = y->dec;
         return x;
@@ -281,7 +282,7 @@ LValue *min_max(std::function<bool(double, double)> comp, LValue *x, LValue *y) 
         return x;
     };
     auto e3 = [x, y]() {
-        x->type = lval_type::decimal;
+        x->type = LValue::Type::decimal;
         x->dec = y->dec;
         return x;
     };
@@ -364,11 +365,11 @@ LValue *if_(LEnv *e, LValue *a) {
     LASSERT_NUM_ARGS("if", a, 3)
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE("if", a, *begin, lval_type::boolean)
+    LASSERT_TYPE("if", a, *begin, LValue::Type::boolean)
     ++begin;
-    LASSERT_TYPE("if", a, *begin, lval_type::qexpr)
+    LASSERT_TYPE("if", a, *begin, LValue::Type::qexpr)
     ++begin;
-    LASSERT_TYPE("if", a, *begin, lval_type::qexpr)
+    LASSERT_TYPE("if", a, *begin, LValue::Type::qexpr)
 
     auto cond = a->pop_first();
     bool boolean = cond->boolean;
@@ -402,9 +403,9 @@ LValue *head(LEnv *e, LValue *a) {
 
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE2("head", a, *begin, lval_type::qexpr, lval_type::string)
+    LASSERT_TYPE2("head", a, *begin, LValue::Type::qexpr, LValue::Type::string)
 
-    if ((*begin)->type == lval_type::qexpr)
+    if ((*begin)->type == LValue::Type::qexpr)
         return qexpr_head(a, begin);
     else
         return string_head(a, begin);
@@ -432,16 +433,16 @@ LValue *tail(LEnv *e, LValue *a) {
 
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE2("tail", a, *begin, lval_type::qexpr, lval_type::string)
+    LASSERT_TYPE2("tail", a, *begin, LValue::Type::qexpr, LValue::Type::string)
 
-    if ((*begin)->type == lval_type::qexpr)
+    if ((*begin)->type == LValue::Type::qexpr)
         return qexpr_tail(a, begin);
     else
         return string_tail(a, begin);
 }
 
 LValue *list(LEnv *e, LValue *a) {
-    a->type = lval_type::qexpr;
+    a->type = LValue::Type::qexpr;
     return a;
 }
 
@@ -449,7 +450,7 @@ LValue *eval(LEnv *e, LValue *a) {
     LASSERT_NUM_ARGS("eval", a, 1)
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE("eval", a, *begin, lval_type::qexpr)
+    LASSERT_TYPE("eval", a, *begin, LValue::Type::qexpr)
 
     auto x = LValue::take(a, begin);
     return LValue::eval_qexpr(e, x);
@@ -476,14 +477,14 @@ LValue *string_join(LValue *a) {
 LValue *join(LEnv *e, LValue *a) {
     auto it = a->cells.begin();
     auto first = *it;
-    LASSERT_TYPE2("join", a, first, lval_type::qexpr, lval_type::string)
+    LASSERT_TYPE2("join", a, first, LValue::Type::qexpr, LValue::Type::string)
 
     for (++it; it != a->cells.end(); ++it) {
         LASSERT_TYPE("join", a, *it, first->type)
     }
 
     LValue *x;
-    if (first->type == lval_type::qexpr)
+    if (first->type == LValue::Type::qexpr)
         x = qexpr_join(a);
     else
         x = string_join(a);
@@ -496,7 +497,7 @@ LValue *cons(LEnv *e, LValue *a) {
     LASSERT_NUM_ARGS("cons", a, 2)
     auto it = ++a->cells.begin();
 
-    LASSERT_TYPE("cons", a, *it, lval_type::qexpr)
+    LASSERT_TYPE("cons", a, *it, LValue::Type::qexpr)
 
     auto x = a->pop_first();
     auto v = a->pop_first();
@@ -510,11 +511,12 @@ LValue *len(LEnv *e, LValue *a) {
     LASSERT_NUM_ARGS("len", a, 1)
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE2("len", a, *begin, lval_type::qexpr, lval_type::string)
+    LASSERT_TYPE2("len", a, *begin, LValue::Type::qexpr, LValue::Type::string)
 
     auto x = LValue::take(a, begin);
-    auto length = new LValue(x->type == lval_type::qexpr ? (long)x->cells.size()
-                                                       : (long)x->str.size());
+    auto length =
+        new LValue(x->type == LValue::Type::qexpr ? (long)x->cells.size()
+                                                  : (long)x->str.size());
     delete x;
     return length;
 }
@@ -523,7 +525,7 @@ LValue *init(LEnv *e, LValue *a) {
     LASSERT_NUM_ARGS("init", a, 1)
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE("init", a, *begin, lval_type::qexpr)
+    LASSERT_TYPE("init", a, *begin, LValue::Type::qexpr)
     LASSERT(a, (*begin)->cells.size() != 0, lerr::passed_nil_expr("init"))
 
     auto v = LValue::take(a, begin);
@@ -536,18 +538,18 @@ LValue *init(LEnv *e, LValue *a) {
 LValue *var(LEnv *e, LValue *a, const string &func) {
     auto begin = a->cells.begin();
 
-    if ((*begin)->type == lval_type::sexpr) {
+    if ((*begin)->type == LValue::Type::sexpr) {
         *begin = LValue::eval_sexpr(e, *begin);
     }
 
-    LASSERT_TYPE2(func, a, *begin, lval_type::symbol, lval_type::qexpr)
+    LASSERT_TYPE2(func, a, *begin, LValue::Type::symbol, LValue::Type::qexpr)
 
     LValue *syms;
 
-    if ((*begin)->type == lval_type::qexpr) {
+    if ((*begin)->type == LValue::Type::qexpr) {
         syms = *begin;
         for (auto cell: syms->cells) {
-            LASSERT(a, cell->type == lval_type::symbol,
+            LASSERT(a, cell->type == LValue::Type::symbol,
                     lerr::cant_define_non_sym(func, cell->type))
         }
     } else {
@@ -561,7 +563,7 @@ LValue *var(LEnv *e, LValue *a, const string &func) {
     syms = a->pop_first();
     a = LValue::eval_cells(e, a);
 
-    if (a->type == lval_type::error) {
+    if (a->type == LValue::Type::error) {
         delete syms;
         return a;
     }
@@ -589,13 +591,13 @@ LValue *lambda(LEnv *e, LValue *a, const string &func) {
     LASSERT_NUM_ARGS(func, a, 2)
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE(func, a, *begin, lval_type::qexpr)
+    LASSERT_TYPE(func, a, *begin, LValue::Type::qexpr)
     ++begin;
-    LASSERT_TYPE(func, a, *begin, lval_type::qexpr)
+    LASSERT_TYPE(func, a, *begin, LValue::Type::qexpr)
 
     auto syms = a->cells.front();
     for (auto cell: syms->cells) {
-        LASSERT(a, cell->type == lval_type::symbol,
+        LASSERT(a, cell->type == LValue::Type::symbol,
                 lerr::cant_define_non_sym(func, cell->type))
     }
 
@@ -617,7 +619,7 @@ LValue *load(LEnv *e, LValue *a) {
     LASSERT_NUM_ARGS("load", a, 1)
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE("load", a, *begin, lval_type::string)
+    LASSERT_TYPE("load", a, *begin, LValue::Type::string)
 
     mpc_result_t r;
     if (mpc_parse_contents((*begin)->str.c_str(), Lispy::instance()->parser(),
@@ -626,7 +628,7 @@ LValue *load(LEnv *e, LValue *a) {
         mpc_ast_delete((mpc_ast_t *)r.output);
         while (!expr->cells.empty()) {
             auto x = LValue::eval(e, expr->pop_first());
-            if (x->type == lval_type::error) {
+            if (x->type == LValue::Type::error) {
                 delete expr;
                 delete a;
 
@@ -667,7 +669,7 @@ LValue *make_error(LEnv *e, LValue *a) {
     LASSERT_NUM_ARGS("error", a, 1)
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE("error", a, *begin, lval_type::string)
+    LASSERT_TYPE("error", a, *begin, LValue::Type::string)
 
     LValue *err = error((*begin)->str);
 
@@ -681,13 +683,13 @@ LValue *read_file(LEnv *e, LValue *a, const string &filename) {
     LASSERT_NUM_ARGS("read", a, 1)
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE("read", a, *begin, lval_type::string)
+    LASSERT_TYPE("read", a, *begin, LValue::Type::string)
 
     mpc_result_t r;
     if (mpc_parse(filename.c_str(), (*begin)->str.c_str(),
                   Lispy::instance()->parser(), &r)) {
         LValue *result = LValue::read((mpc_ast_t *)r.output);
-        result->type = lval_type::qexpr;
+        result->type = LValue::Type::qexpr;
 
         mpc_ast_delete((mpc_ast_t *)r.output);
         delete a;
@@ -707,7 +709,7 @@ LValue *read_file(LEnv *e, LValue *a, const string &filename) {
 
 LValue *show(LEnv *e, LValue *a) {
     for (auto cell: a->cells) {
-        LASSERT_TYPE("show", a, cell, lval_type::string)
+        LASSERT_TYPE("show", a, cell, LValue::Type::string)
     }
 
     for (auto it = a->cells.begin(); it != a->cells.end();) {
@@ -728,11 +730,12 @@ LValue *exit(LEnv *e, LValue *a) {
     LASSERT_NUM_ARGS("exit", a, 1)
     auto begin = a->cells.begin();
 
-    LASSERT_TYPE2("exit", a, *begin, lval_type::string, lval_type::integer)
+    LASSERT_TYPE2("exit", a, *begin, LValue::Type::string,
+                  LValue::Type::integer)
 
     auto val = LValue::take_first(a);
-    LValue *err = new LValue(lval_type::error);
-    if (val->type == lval_type::integer) {
+    LValue *err = new LValue(LValue::Type::error);
+    if (val->type == LValue::Type::integer) {
         err->integ = val->integ;
         err->err = "";
     } else {

@@ -1,8 +1,8 @@
 #include "Lispy.hpp"
 #include <linenoise.h>
+#include "LValue.hpp"
 #include "generated.hpp"
 #include "lispy_config.h"
-#include "LValue.hpp"
 
 using std::cerr;
 using std::cout;
@@ -89,7 +89,7 @@ bool Lispy::load_prelude() {
     LValue *args = LValue::sexpr({new LValue(string(prelude))});
     LValue *expr = builtin::read_file(&env, args, "prelude.lspy");
 
-    if (expr->type == lval_type::error) {
+    if (expr->type == LValue::Type::error) {
         cerr << *expr << endl;
         delete expr;
         return false;
@@ -97,7 +97,7 @@ bool Lispy::load_prelude() {
 
     while (!expr->cells.empty()) {
         auto x = LValue::eval(&env, expr->pop_first());
-        if (x->type == lval_type::error) {
+        if (x->type == LValue::Type::error) {
             cerr << "Failed to load prelude: " << *x << endl;
             delete x;
             delete expr;
@@ -166,7 +166,7 @@ bool Lispy::process_result(LValue *result) {
     }
 
     if (flags & LISPY_FLAG_EXIT) {
-        if (result->type == lval_type::error) {
+        if (result->type == LValue::Type::error) {
             exit_code = result->integ;
             if (result->err != "") {
                 cout << "Exiting with message: " << result->err << endl;
@@ -176,11 +176,12 @@ bool Lispy::process_result(LValue *result) {
         return false;
     }
 
-    if (flags & LISPY_FLAG_INTERACTIVE || result->type == lval_type::error) {
+    if (flags & LISPY_FLAG_INTERACTIVE || result->type == LValue::Type::error) {
         cout << *result << endl;
     }
 
-    if (result->type == lval_type::error && flags & LISPY_FLAG_FAIL_ON_ERROR) {
+    if (result->type == LValue::Type::error &&
+        flags & LISPY_FLAG_FAIL_ON_ERROR) {
         return false;
     }
 
@@ -210,7 +211,7 @@ bool Lispy::eval_strings(const vector<string> &strings) {
         LValue *args = LValue::sexpr({new LValue(str)});
         LValue *expr = builtin::read(&env, args);
 
-        if (expr->type == lval_type::error) {
+        if (expr->type == LValue::Type::error) {
             cout << *expr << endl;
             delete expr;
             exit_code = 1;
