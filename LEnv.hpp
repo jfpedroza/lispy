@@ -8,16 +8,16 @@
 
 struct LValue;
 
-struct lenv {
+struct LEnv {
     using table_type = std::map<std::string, LValue *>;
 
-    lenv *parent;
+    LEnv *parent;
     table_type symbols;
 
-    lenv();
-    lenv(const lenv &other);
-    explicit lenv(const lenv *const other);
-    ~lenv();
+    LEnv();
+    LEnv(const LEnv &other);
+    explicit LEnv(const LEnv *const other);
+    ~LEnv();
 
     std::vector<std::string> keys() const;
     std::vector<const std::string *> keys(const std::string &prefix) const;

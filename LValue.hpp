@@ -25,7 +25,7 @@ enum class lval_type {
 
 std::ostream &operator<<(std::ostream &os, const lval_type &type);
 
-struct lenv;
+struct LEnv;
 
 struct LValue {
     lval_type type;
@@ -38,7 +38,7 @@ struct LValue {
     std::string str;
 
     lbuiltin builtin;
-    lenv *env;
+    LEnv *env;
     LValue *formals;
     LValue *body;
 
@@ -97,7 +97,7 @@ struct LValue {
 
     LValue *pop_first();
 
-    LValue *call(lenv *e, LValue *a);
+    LValue *call(LEnv *e, LValue *a);
 
     static LValue *take(LValue *v, const iter &it);
 
@@ -113,13 +113,13 @@ struct LValue {
 
     static LValue *read(mpc_ast_t *t);
 
-    static LValue *eval(lenv *e, LValue *v);
+    static LValue *eval(LEnv *e, LValue *v);
 
-    static LValue *eval_sexpr(lenv *e, LValue *v);
+    static LValue *eval_sexpr(LEnv *e, LValue *v);
 
-    static LValue *eval_qexpr(lenv *e, LValue *v);
+    static LValue *eval_qexpr(LEnv *e, LValue *v);
 
-    static LValue *eval_cells(lenv *e, LValue *v);
+    static LValue *eval_cells(LEnv *e, LValue *v);
 
     friend std::ostream &operator<<(std::ostream &os, const LValue &value);
 

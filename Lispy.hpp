@@ -3,7 +3,7 @@
 
 #include <linenoise.h>
 #include <tclap/CmdLine.h>
-#include "lenv.hpp"
+#include "LEnv.hpp"
 #include "mpc.h"
 
 #define LISPY_NO_FLAGS 0x0
@@ -25,7 +25,7 @@ class Lispy {
     uint flags;
 
    private:
-    lenv env;
+    LEnv env;
     int exit_code;
     static Lispy *_instance;
 

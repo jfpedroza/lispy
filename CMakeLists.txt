@@ -27,7 +27,7 @@ add_custom_command(
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-add_executable(lispy main.cpp Lispy.cpp LValue.cpp lval_error.cpp builtin.cpp lenv.cpp ${CMAKE_CURRENT_BINARY_DIR}/generated.hpp)
+add_executable(lispy main.cpp Lispy.cpp LValue.cpp lval_error.cpp builtin.cpp LEnv.cpp ${CMAKE_CURRENT_BINARY_DIR}/generated.hpp)
 target_link_libraries(lispy linenoise MPC)
 
 install(TARGETS lispy)

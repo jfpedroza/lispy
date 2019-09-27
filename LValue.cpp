@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include "builtin.hpp"
-#include "lenv.hpp"
+#include "LEnv.hpp"
 #include "lval_error.hpp"
 
 using std::ostream;
@@ -130,7 +130,7 @@ LValue::LValue(const LValue &other) {
                 this->builtin = other.builtin;
             } else {
                 this->builtin = nullptr;
-                this->env = new lenv(other.env);
+                this->env = new LEnv(other.env);
                 this->formals = new LValue(other.formals);
                 this->body = new LValue(other.body);
             }
@@ -177,7 +177,7 @@ LValue *LValue::function(LValue *formals, LValue *body) {
     val->builtin = nullptr;
     val->formals = formals;
     val->body = body;
-    val->env = new lenv();
+    val->env = new LEnv();
     return val;
 }
 
@@ -192,7 +192,7 @@ LValue *LValue::macro(LValue *formals, LValue *body) {
     val->builtin = nullptr;
     val->formals = formals;
     val->body = body;
-    val->env = new lenv();
+    val->env = new LEnv();
     return val;
 }
 
@@ -274,7 +274,7 @@ LValue *LValue::pop(size_t i) {
 
 LValue *LValue::pop_first() { return pop(cells.begin()); }
 
-LValue *LValue::call(lenv *e, LValue *a) {
+LValue *LValue::call(LEnv *e, LValue *a) {
     if (builtin) return builtin(e, a);
 
     auto given = a->cells.size();
@@ -404,7 +404,7 @@ LValue *LValue::read(mpc_ast_t *t) {
     return x;
 }
 
-LValue *LValue::eval(lenv *e, LValue *v) {
+LValue *LValue::eval(LEnv *e, LValue *v) {
     if (v->type == lval_type::symbol || v->type == lval_type::cname) {
         auto x = e->get(v->sym);
         delete v;
@@ -416,7 +416,7 @@ LValue *LValue::eval(lenv *e, LValue *v) {
     return v;
 }
 
-LValue *LValue::eval_sexpr(lenv *e, LValue *v) {
+LValue *LValue::eval_sexpr(LEnv *e, LValue *v) {
     if (v->cells.empty()) return v;
 
     auto begin = v->cells.begin();
@@ -466,12 +466,12 @@ LValue *LValue::eval_sexpr(lenv *e, LValue *v) {
     }
 }
 
-LValue *LValue::eval_qexpr(lenv *e, LValue *v) {
+LValue *LValue::eval_qexpr(LEnv *e, LValue *v) {
     v->type = lval_type::sexpr;
     return eval_sexpr(e, v);
 }
 
-LValue *LValue::eval_cells(lenv *e, LValue *v) {
+LValue *LValue::eval_cells(LEnv *e, LValue *v) {
     std::transform(v->cells.begin(), v->cells.end(), v->cells.begin(),
                    std::bind(eval, e, std::placeholders::_1));
 
@@ -599,8 +599,8 @@ bool LValue::operator==(const LValue &other) const {
         case lval_type::macro:
         case lval_type::command:
             if (this->builtin && other.builtin) {
-                auto a = this->builtin.target<LValue *(*)(lenv *, LValue *)>();
-                auto b = other.builtin.target<LValue *(*)(lenv *, LValue *)>();
+                auto a = this->builtin.target<LValue *(*)(LEnv *, LValue *)>();
+                auto b = other.builtin.target<LValue *(*)(LEnv *, LValue *)>();
                 return *a == *b;
             } else if (!this->builtin && !other.builtin) {
                 return *this->formals == *other.formals &&
