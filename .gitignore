@@ -3,3 +3,4 @@ build/
 cmake-build-*
 .idea/
 Makefile
+.ycm_extra_conf.py
