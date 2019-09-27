@@ -1,4 +1,4 @@
-#include "lval.hpp"
+#include "LValue.hpp"
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -50,7 +50,7 @@ bool should_skip_child(mpc_ast_t *child) {
     return it != end;
 }
 
-lval::lval(lval_type type) {
+LValue::LValue(lval_type type) {
     this->type = type;
     this->body = nullptr;
     this->formals = nullptr;
@@ -60,7 +60,7 @@ lval::lval(lval_type type) {
     this->integ = 0;
 }
 
-lval::lval(long num) {
+LValue::LValue(long num) {
     this->type = lval_type::integer;
     this->integ = num;
     this->body = nullptr;
@@ -70,7 +70,7 @@ lval::lval(long num) {
     this->dec = 0.0;
 }
 
-lval::lval(double num) {
+LValue::LValue(double num) {
     this->type = lval_type::decimal;
     this->dec = num;
     this->body = nullptr;
@@ -80,7 +80,7 @@ lval::lval(double num) {
     this->integ = 0;
 }
 
-lval::lval(bool boolean) {
+LValue::LValue(bool boolean) {
     this->type = lval_type::boolean;
     this->boolean = boolean;
     this->body = nullptr;
@@ -90,7 +90,7 @@ lval::lval(bool boolean) {
     this->integ = 0;
 }
 
-lval::lval(string str) {
+LValue::LValue(string str) {
     this->type = lval_type::string;
     this->str = str;
     this->body = nullptr;
@@ -101,7 +101,7 @@ lval::lval(string str) {
     this->integ = 0;
 }
 
-lval::lval(const lval &other) {
+LValue::LValue(const LValue &other) {
     this->type = other.type;
     switch (this->type) {
         case lval_type::integer:
@@ -131,49 +131,49 @@ lval::lval(const lval &other) {
             } else {
                 this->builtin = nullptr;
                 this->env = new lenv(other.env);
-                this->formals = new lval(other.formals);
-                this->body = new lval(other.body);
+                this->formals = new LValue(other.formals);
+                this->body = new LValue(other.body);
             }
             break;
         case lval_type::sexpr:
         case lval_type::qexpr:
             std::transform(other.cells.begin(), other.cells.end(),
                            std::back_inserter(this->cells),
-                           [](auto cell) { return new lval(cell); });
+                           [](auto cell) { return new LValue(cell); });
             break;
         default:
             break;
     }
 }
 
-lval::lval(const lval *const other): lval(*other) {}
+LValue::LValue(const LValue *const other): LValue(*other) {}
 
-lval *lval::symbol(string sym) {
-    auto val = new lval(lval_type::symbol);
+LValue *LValue::symbol(string sym) {
+    auto val = new LValue(lval_type::symbol);
     val->sym = sym;
     return val;
 }
 
-lval *lval::cname(string sym) {
-    auto val = new lval(lval_type::cname);
+LValue *LValue::cname(string sym) {
+    auto val = new LValue(lval_type::cname);
     val->sym = sym;
     return val;
 }
 
-lval *lval::error(string err) {
-    auto val = new lval(lval_type::error);
+LValue *LValue::error(string err) {
+    auto val = new LValue(lval_type::error);
     val->err = err;
     return val;
 }
 
-lval *lval::function(lbuiltin fun) {
-    auto val = new lval(lval_type::func);
+LValue *LValue::function(lbuiltin fun) {
+    auto val = new LValue(lval_type::func);
     val->builtin = fun;
     return val;
 }
 
-lval *lval::function(lval *formals, lval *body) {
-    auto val = new lval(lval_type::func);
+LValue *LValue::function(LValue *formals, LValue *body) {
+    auto val = new LValue(lval_type::func);
     val->builtin = nullptr;
     val->formals = formals;
     val->body = body;
@@ -181,14 +181,14 @@ lval *lval::function(lval *formals, lval *body) {
     return val;
 }
 
-lval *lval::macro(lbuiltin fun) {
-    auto val = new lval(lval_type::macro);
+LValue *LValue::macro(lbuiltin fun) {
+    auto val = new LValue(lval_type::macro);
     val->builtin = fun;
     return val;
 }
 
-lval *lval::macro(lval *formals, lval *body) {
-    auto val = new lval(lval_type::macro);
+LValue *LValue::macro(LValue *formals, LValue *body) {
+    auto val = new LValue(lval_type::macro);
     val->builtin = nullptr;
     val->formals = formals;
     val->body = body;
@@ -196,35 +196,35 @@ lval *lval::macro(lval *formals, lval *body) {
     return val;
 }
 
-lval *lval::command(lbuiltin fun) {
-    auto val = new lval(lval_type::command);
+LValue *LValue::command(lbuiltin fun) {
+    auto val = new LValue(lval_type::command);
     val->builtin = fun;
     return val;
 }
 
-lval *lval::sexpr() {
-    auto val = new lval(lval_type::sexpr);
+LValue *LValue::sexpr() {
+    auto val = new LValue(lval_type::sexpr);
     return val;
 }
 
-lval *lval::sexpr(std::initializer_list<lval *> cells) {
+LValue *LValue::sexpr(std::initializer_list<LValue *> cells) {
     auto val = sexpr();
     val->cells = cells;
     return val;
 }
 
-lval *lval::qexpr() {
-    auto val = new lval(lval_type::qexpr);
+LValue *LValue::qexpr() {
+    auto val = new LValue(lval_type::qexpr);
     return val;
 }
 
-lval *lval::qexpr(std::initializer_list<lval *> cells) {
+LValue *LValue::qexpr(std::initializer_list<LValue *> cells) {
     auto val = qexpr();
     val->cells = cells;
     return val;
 }
 
-lval::~lval() {
+LValue::~LValue() {
     for (auto cell: cells) {
         delete cell;
     }
@@ -236,7 +236,7 @@ lval::~lval() {
     }
 }
 
-bool lval::is_number() const {
+bool LValue::is_number() const {
     switch (this->type) {
         case lval_type::integer:
             return true;
@@ -247,7 +247,7 @@ bool lval::is_number() const {
     }
 }
 
-double lval::get_number() const {
+double LValue::get_number() const {
     switch (this->type) {
         case lval_type::integer:
             return this->integ;
@@ -258,13 +258,13 @@ double lval::get_number() const {
     }
 }
 
-lval *lval::pop(const iter &it) {
+LValue *LValue::pop(const iter &it) {
     auto x = *it;
     cells.erase(it);
     return x;
 }
 
-lval *lval::pop(size_t i) {
+LValue *LValue::pop(size_t i) {
     auto it = cells.begin();
     for (size_t pos = 0; pos < i; pos++, ++it) {
     }
@@ -272,9 +272,9 @@ lval *lval::pop(size_t i) {
     return pop(it);
 }
 
-lval *lval::pop_first() { return pop(cells.begin()); }
+LValue *LValue::pop_first() { return pop(cells.begin()); }
 
-lval *lval::call(lenv *e, lval *a) {
+LValue *LValue::call(lenv *e, LValue *a) {
     if (builtin) return builtin(e, a);
 
     auto given = a->cells.size();
@@ -298,7 +298,7 @@ lval *lval::call(lenv *e, lval *a) {
 
             if (this->type == lval_type::macro) {
                 for (auto &cell: a->cells) {
-                    cell = lval::qexpr({cell});
+                    cell = LValue::qexpr({cell});
                 }
             }
 
@@ -310,7 +310,7 @@ lval *lval::call(lenv *e, lval *a) {
 
         auto val = a->pop_first();
         if (this->type == lval_type::macro) {
-            val = lval::qexpr({val});
+            val = LValue::qexpr({val});
         }
 
         env->put(sym->sym, val);
@@ -327,7 +327,7 @@ lval *lval::call(lenv *e, lval *a) {
 
         delete formals->pop_first();
         auto sym = formals->pop_first();
-        auto val = lval::qexpr();
+        auto val = LValue::qexpr();
         env->put(sym->sym, val);
         delete sym;
         delete val;
@@ -336,57 +336,57 @@ lval *lval::call(lenv *e, lval *a) {
     if (formals->cells.empty()) {
         env->parent = e;
 
-        auto v = new lval(body);
+        auto v = new LValue(body);
         return eval_qexpr(env, v);
     } else {
-        return new lval(this);
+        return new LValue(this);
     }
 }
 
-lval *lval::take(lval *v, const iter &it) {
+LValue *LValue::take(LValue *v, const iter &it) {
     auto x = v->pop(it);
     delete v;
     return x;
 }
 
-lval *lval::take(lval *v, size_t i) {
+LValue *LValue::take(LValue *v, size_t i) {
     auto x = v->pop(i);
     delete v;
     return x;
 }
 
-lval *lval::take_first(lval *v) { return take(v, v->cells.begin()); }
+LValue *LValue::take_first(LValue *v) { return take(v, v->cells.begin()); }
 
-lval *lval::read_integer(mpc_ast_t *t) {
+LValue *LValue::read_integer(mpc_ast_t *t) {
     errno = 0;
     long x = strtol(t->contents, NULL, 10);
-    return errno != ERANGE ? new lval(x) : error(lerr::bad_num());
+    return errno != ERANGE ? new LValue(x) : error(lerr::bad_num());
 }
 
-lval *lval::read_decimal(mpc_ast_t *t) {
+LValue *LValue::read_decimal(mpc_ast_t *t) {
     errno = 0;
     double x = strtod(t->contents, NULL);
-    return errno != ERANGE ? new lval(x) : error(lerr::bad_num());
+    return errno != ERANGE ? new LValue(x) : error(lerr::bad_num());
 }
 
-lval *lval::read_string(mpc_ast_t *t) {
+LValue *LValue::read_string(mpc_ast_t *t) {
     t->contents[strlen(t->contents) - 1] = '\0';
     char *unescaped = (char *)malloc(strlen(t->contents + 1) + 1);
     strcpy(unescaped, t->contents + 1);
     unescaped = (char *)mpcf_unescape(unescaped);
-    auto str = new lval(string(unescaped));
+    auto str = new LValue(string(unescaped));
     free(unescaped);
     return str;
 }
 
-lval *lval::read(mpc_ast_t *t) {
+LValue *LValue::read(mpc_ast_t *t) {
     if (strstr(t->tag, "integer")) return read_integer(t);
     if (strstr(t->tag, "decimal")) return read_decimal(t);
     if (strstr(t->tag, "string")) return read_string(t);
-    if (strstr(t->tag, "symbol")) return lval::symbol(t->contents);
-    if (strstr(t->tag, "cname")) return lval::cname(t->contents);
+    if (strstr(t->tag, "symbol")) return LValue::symbol(t->contents);
+    if (strstr(t->tag, "cname")) return LValue::cname(t->contents);
 
-    lval *x = nullptr;
+    LValue *x = nullptr;
     if (strcmp(t->tag, ">") == 0 || strstr(t->tag, "sexpr")) {
         x = sexpr();
     } else if (strstr(t->tag, "qexpr")) {
@@ -404,7 +404,7 @@ lval *lval::read(mpc_ast_t *t) {
     return x;
 }
 
-lval *lval::eval(lenv *e, lval *v) {
+LValue *LValue::eval(lenv *e, LValue *v) {
     if (v->type == lval_type::symbol || v->type == lval_type::cname) {
         auto x = e->get(v->sym);
         delete v;
@@ -416,7 +416,7 @@ lval *lval::eval(lenv *e, lval *v) {
     return v;
 }
 
-lval *lval::eval_sexpr(lenv *e, lval *v) {
+LValue *LValue::eval_sexpr(lenv *e, LValue *v) {
     if (v->cells.empty()) return v;
 
     auto begin = v->cells.begin();
@@ -425,7 +425,7 @@ lval *lval::eval_sexpr(lenv *e, lval *v) {
     if (v->cells.size() == 1) {
         auto val = take_first(v);
         if ((*begin)->type == lval_type::command) {
-            return val->call(e, lval::sexpr());
+            return val->call(e, LValue::sexpr());
         }
 
         return val;
@@ -466,12 +466,12 @@ lval *lval::eval_sexpr(lenv *e, lval *v) {
     }
 }
 
-lval *lval::eval_qexpr(lenv *e, lval *v) {
+LValue *LValue::eval_qexpr(lenv *e, LValue *v) {
     v->type = lval_type::sexpr;
     return eval_sexpr(e, v);
 }
 
-lval *lval::eval_cells(lenv *e, lval *v) {
+LValue *LValue::eval_cells(lenv *e, LValue *v) {
     std::transform(v->cells.begin(), v->cells.end(), v->cells.begin(),
                    std::bind(eval, e, std::placeholders::_1));
 
@@ -484,7 +484,7 @@ lval *lval::eval_cells(lenv *e, lval *v) {
     return v;
 }
 
-ostream &lval::print_expr(ostream &os, char open, char close) const {
+ostream &LValue::print_expr(ostream &os, char open, char close) const {
     os << open;
 
     for (auto it = cells.begin(); it != cells.end();) {
@@ -496,7 +496,7 @@ ostream &lval::print_expr(ostream &os, char open, char close) const {
     return os << close;
 }
 
-ostream &lval::print_str(ostream &os) const {
+ostream &LValue::print_str(ostream &os) const {
     auto s = str.c_str();
     char *escaped = (char *)malloc(str.size() + 1);
     strcpy(escaped, s);
@@ -506,7 +506,7 @@ ostream &lval::print_str(ostream &os) const {
     return os;
 }
 
-ostream &operator<<(ostream &os, const lval &value) {
+ostream &operator<<(ostream &os, const LValue &value) {
     switch (value.type) {
         case lval_type::integer:
             return os << value.integ;
@@ -556,7 +556,7 @@ ostream &operator<<(ostream &os, const lval &value) {
     }
 }
 
-bool lval::operator==(const lval &other) const {
+bool LValue::operator==(const LValue &other) const {
     if (this->is_number() && other.is_number()) {
         switch (this->type) {
             case lval_type::decimal:
@@ -599,8 +599,8 @@ bool lval::operator==(const lval &other) const {
         case lval_type::macro:
         case lval_type::command:
             if (this->builtin && other.builtin) {
-                auto a = this->builtin.target<lval *(*)(lenv *, lval *)>();
-                auto b = other.builtin.target<lval *(*)(lenv *, lval *)>();
+                auto a = this->builtin.target<LValue *(*)(lenv *, LValue *)>();
+                auto b = other.builtin.target<LValue *(*)(lenv *, LValue *)>();
                 return *a == *b;
             } else if (!this->builtin && !other.builtin) {
                 return *this->formals == *other.formals &&
@@ -622,4 +622,4 @@ bool lval::operator==(const lval &other) const {
     }
 }
 
-bool lval::operator!=(const lval &other) const { return !(*this == other); }
+bool LValue::operator!=(const LValue &other) const { return !(*this == other); }

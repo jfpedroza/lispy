@@ -2,7 +2,7 @@
 #define LVAL_ERROR_HPP
 
 #include <string>
-#include "lval.hpp"
+#include "LValue.hpp"
 
 namespace lerr {
 std::string bad_num();

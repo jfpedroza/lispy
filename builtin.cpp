@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include "Lispy.hpp"
 #include "lenv.hpp"
-#include "lval.hpp"
+#include "LValue.hpp"
 #include "lval_error.hpp"
 
 using std::cout;
@@ -56,13 +56,13 @@ using std::string;
         auto b = Y->B;                                                         \
         delete X;                                                              \
         delete Y;                                                              \
-        return new lval(a OP b);                                               \
+        return new LValue(a OP b);                                               \
     };                                                                         \
                                                                                \
     return comp();
 
 #define LVAL_COMP_OPERATOR(OP, X, Y)                                           \
-    function<lval *()> comp;                                                   \
+    function<LValue *()> comp;                                                   \
     LVAL_OPERATOR_BASE(X, Y, LVAL_COMPARISON(OP, X, Y, dec, dec),              \
                        LVAL_COMPARISON(OP, X, Y, dec, integ),                  \
                        LVAL_COMPARISON(OP, X, Y, integ, dec),                  \
@@ -106,9 +106,9 @@ namespace builtin {
 using std::function;
 using std::unordered_map;
 
-auto error = lval::error;
+auto error = LValue::error;
 
-unordered_map<string, function<lval *(lval *, lval *)>> operator_table = {
+unordered_map<string, function<LValue *(LValue *, LValue *)>> operator_table = {
     {"+", add},      {"-", substract}, {"*", multiply},  {"/", divide},
     {"%", reminder}, {"^", power},     {"min", minimum}, {"max", maximum}};
 
@@ -159,8 +159,8 @@ void add_builtins(lenv *e) {
     e->add_builtin_function("exit", exit);
 
     // Atoms
-    lval *True = new lval(true);
-    lval *False = new lval(false);
+    LValue *True = new LValue(true);
+    LValue *False = new LValue(false);
     e->def("true", True);
     e->def("false", False);
     delete True;
@@ -178,7 +178,7 @@ lbuiltin ope(const string &op) {
     return std::bind(handle_op, _1, _2, op);
 }
 
-lval *handle_op(lenv *e, lval *a, const string &op) {
+LValue *handle_op(lenv *e, LValue *a, const string &op) {
     for (auto cell: a->cells) {
         LASSERT_NUMBER(op, a, cell)
     }
@@ -203,23 +203,23 @@ lval *handle_op(lenv *e, lval *a, const string &op) {
     return x;
 }
 
-lval *add(lval *x, lval *y){LVAL_OPERATOR(+=, x, y)}
+LValue *add(LValue *x, LValue *y){LVAL_OPERATOR(+=, x, y)}
 
-lval *substract(lval *x, lval *y){LVAL_OPERATOR(-=, x, y)}
+LValue *substract(LValue *x, LValue *y){LVAL_OPERATOR(-=, x, y)}
 
-lval *multiply(lval *x, lval *y){LVAL_OPERATOR(*=, x, y)}
+LValue *multiply(LValue *x, LValue *y){LVAL_OPERATOR(*=, x, y)}
 
-lval *err_div_zero(lval *x) {
+LValue *err_div_zero(LValue *x) {
     delete x;
     return error(lerr::div_zero());
 }
 
-lval *err_int_mod(lval *x) {
+LValue *err_int_mod(LValue *x) {
     delete x;
     return error(lerr::int_mod());
 }
 
-lval *divide(lval *x, lval *y) {
+LValue *divide(LValue *x, LValue *y) {
     auto e1 = [x, y]() {
         x->dec /= y->dec;
         return x;
@@ -245,7 +245,7 @@ lval *divide(lval *x, lval *y) {
                        return y->integ == 0 ? err_div_zero(x) : e4())
 }
 
-lval *reminder(lval *x, lval *y) {
+LValue *reminder(LValue *x, LValue *y) {
     auto e4 = [x, y]() {
         x->integ %= y->integ;
         return x;
@@ -256,9 +256,9 @@ lval *reminder(lval *x, lval *y) {
                        return y->integ == 0 ? err_div_zero(x) : e4())
 }
 
-lval *power(lval *x, lval *y){LVAL_BINARY_HANDLER(pow, x, y)}
+LValue *power(LValue *x, LValue *y){LVAL_BINARY_HANDLER(pow, x, y)}
 
-lval *negate(lval *x) {
+LValue *negate(LValue *x) {
     switch (x->type) {
         case lval_type::decimal:
             x->dec *= -1;
@@ -271,7 +271,7 @@ lval *negate(lval *x) {
     }
 }
 
-lval *min_max(std::function<bool(double, double)> comp, lval *x, lval *y) {
+LValue *min_max(std::function<bool(double, double)> comp, LValue *x, LValue *y) {
     auto e1 = [x, y]() {
         x->dec = y->dec;
         return x;
@@ -296,11 +296,11 @@ lval *min_max(std::function<bool(double, double)> comp, lval *x, lval *y) {
                        return comp(x->integ, y->integ) ? x : e4())
 }
 
-lval *minimum(lval *x, lval *y) {
+LValue *minimum(LValue *x, LValue *y) {
     return min_max(std::less_equal<double>(), x, y);
 }
 
-lval *maximum(lval *x, lval *y) {
+LValue *maximum(LValue *x, LValue *y) {
     return min_max(std::greater_equal<double>(), x, y);
 }
 
@@ -309,7 +309,7 @@ lbuiltin ordering_op(const string &op) {
     return std::bind(ord, _1, _2, op);
 }
 
-lval *ord(lenv *e, lval *a, const std::string &op) {
+LValue *ord(lenv *e, LValue *a, const std::string &op) {
     LASSERT_NUM_ARGS(op, a, 2)
     auto begin = a->cells.begin();
 
@@ -338,7 +338,7 @@ lval *ord(lenv *e, lval *a, const std::string &op) {
     return error("Fatal! Weird operator '" + op + "' in ord");
 }
 
-lval *cmp(lenv *e, lval *a, const std::string &op) {
+LValue *cmp(lenv *e, LValue *a, const std::string &op) {
     LASSERT_NUM_ARGS(op, a, 2)
     auto begin = a->cells.begin();
 
@@ -353,14 +353,14 @@ lval *cmp(lenv *e, lval *a, const std::string &op) {
         result = *x != *y;
     delete a;
 
-    return new lval(result);
+    return new LValue(result);
 }
 
-lval *equals(lenv *e, lval *a) { return cmp(e, a, "=="); }
+LValue *equals(lenv *e, LValue *a) { return cmp(e, a, "=="); }
 
-lval *not_equals(lenv *e, lval *a) { return cmp(e, a, "!="); }
+LValue *not_equals(lenv *e, LValue *a) { return cmp(e, a, "!="); }
 
-lval *if_(lenv *e, lval *a) {
+LValue *if_(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("if", a, 3)
     auto begin = a->cells.begin();
 
@@ -373,14 +373,14 @@ lval *if_(lenv *e, lval *a) {
     auto cond = a->pop_first();
     bool boolean = cond->boolean;
     delete cond;
-    auto result = lval::take(a, boolean ? 0 : 1);
-    return lval::eval_qexpr(e, result);
+    auto result = LValue::take(a, boolean ? 0 : 1);
+    return LValue::eval_qexpr(e, result);
 }
 
-lval *qexpr_head(lval *a, lval::iter begin) {
+LValue *qexpr_head(LValue *a, LValue::iter begin) {
     LASSERT_NOT_EMPTY("head", a, *begin)
 
-    auto v = lval::take(a, begin);
+    auto v = LValue::take(a, begin);
     while (v->cells.size() > 1) {
         delete v->pop(1);
     }
@@ -388,16 +388,16 @@ lval *qexpr_head(lval *a, lval::iter begin) {
     return v;
 }
 
-lval *string_head(lval *a, lval::iter begin) {
+LValue *string_head(LValue *a, LValue::iter begin) {
     LASSERT_NOT_EMPTY_STRING("head", a, *begin)
 
-    auto v = lval::take(a, begin);
+    auto v = LValue::take(a, begin);
     v->str = v->str.substr(0, 1);
 
     return v;
 }
 
-lval *head(lenv *e, lval *a) {
+LValue *head(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("head", a, 1)
 
     auto begin = a->cells.begin();
@@ -410,24 +410,24 @@ lval *head(lenv *e, lval *a) {
         return string_head(a, begin);
 }
 
-lval *qexpr_tail(lval *a, lval::iter begin) {
+LValue *qexpr_tail(LValue *a, LValue::iter begin) {
     LASSERT_NOT_EMPTY("tail", a, *begin)
 
-    auto v = lval::take(a, begin);
+    auto v = LValue::take(a, begin);
     delete v->pop_first();
     return v;
 }
 
-lval *string_tail(lval *a, lval::iter begin) {
+LValue *string_tail(LValue *a, LValue::iter begin) {
     LASSERT_NOT_EMPTY_STRING("tail", a, *begin)
 
-    auto v = lval::take(a, begin);
+    auto v = LValue::take(a, begin);
     v->str = v->str.substr(1);
 
     return v;
 }
 
-lval *tail(lenv *e, lval *a) {
+LValue *tail(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("tail", a, 1)
 
     auto begin = a->cells.begin();
@@ -440,22 +440,22 @@ lval *tail(lenv *e, lval *a) {
         return string_tail(a, begin);
 }
 
-lval *list(lenv *e, lval *a) {
+LValue *list(lenv *e, LValue *a) {
     a->type = lval_type::qexpr;
     return a;
 }
 
-lval *eval(lenv *e, lval *a) {
+LValue *eval(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("eval", a, 1)
     auto begin = a->cells.begin();
 
     LASSERT_TYPE("eval", a, *begin, lval_type::qexpr)
 
-    auto x = lval::take(a, begin);
-    return lval::eval_qexpr(e, x);
+    auto x = LValue::take(a, begin);
+    return LValue::eval_qexpr(e, x);
 }
 
-lval *qexpr_join(lval *a) {
+LValue *qexpr_join(LValue *a) {
     auto x = a->pop_first();
     for (auto expr: a->cells) {
         x->cells.splice(x->cells.end(), expr->cells);
@@ -464,7 +464,7 @@ lval *qexpr_join(lval *a) {
     return x;
 }
 
-lval *string_join(lval *a) {
+LValue *string_join(LValue *a) {
     auto x = a->pop_first();
     for (auto expr: a->cells) {
         x->str += expr->str;
@@ -473,7 +473,7 @@ lval *string_join(lval *a) {
     return x;
 }
 
-lval *join(lenv *e, lval *a) {
+LValue *join(lenv *e, LValue *a) {
     auto it = a->cells.begin();
     auto first = *it;
     LASSERT_TYPE2("join", a, first, lval_type::qexpr, lval_type::string)
@@ -482,7 +482,7 @@ lval *join(lenv *e, lval *a) {
         LASSERT_TYPE("join", a, *it, first->type)
     }
 
-    lval *x;
+    LValue *x;
     if (first->type == lval_type::qexpr)
         x = qexpr_join(a);
     else
@@ -492,7 +492,7 @@ lval *join(lenv *e, lval *a) {
     return x;
 }
 
-lval *cons(lenv *e, lval *a) {
+LValue *cons(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("cons", a, 2)
     auto it = ++a->cells.begin();
 
@@ -506,43 +506,43 @@ lval *cons(lenv *e, lval *a) {
     return v;
 }
 
-lval *len(lenv *e, lval *a) {
+LValue *len(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("len", a, 1)
     auto begin = a->cells.begin();
 
     LASSERT_TYPE2("len", a, *begin, lval_type::qexpr, lval_type::string)
 
-    auto x = lval::take(a, begin);
-    auto length = new lval(x->type == lval_type::qexpr ? (long)x->cells.size()
+    auto x = LValue::take(a, begin);
+    auto length = new LValue(x->type == lval_type::qexpr ? (long)x->cells.size()
                                                        : (long)x->str.size());
     delete x;
     return length;
 }
 
-lval *init(lenv *e, lval *a) {
+LValue *init(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("init", a, 1)
     auto begin = a->cells.begin();
 
     LASSERT_TYPE("init", a, *begin, lval_type::qexpr)
     LASSERT(a, (*begin)->cells.size() != 0, lerr::passed_nil_expr("init"))
 
-    auto v = lval::take(a, begin);
+    auto v = LValue::take(a, begin);
     auto end = v->cells.end();
     end--;
     delete v->pop(end);
     return v;
 }
 
-lval *var(lenv *e, lval *a, const string &func) {
+LValue *var(lenv *e, LValue *a, const string &func) {
     auto begin = a->cells.begin();
 
     if ((*begin)->type == lval_type::sexpr) {
-        *begin = lval::eval_sexpr(e, *begin);
+        *begin = LValue::eval_sexpr(e, *begin);
     }
 
     LASSERT_TYPE2(func, a, *begin, lval_type::symbol, lval_type::qexpr)
 
-    lval *syms;
+    LValue *syms;
 
     if ((*begin)->type == lval_type::qexpr) {
         syms = *begin;
@@ -551,7 +551,7 @@ lval *var(lenv *e, lval *a, const string &func) {
                     lerr::cant_define_non_sym(func, cell->type))
         }
     } else {
-        *begin = lval::qexpr({*begin});
+        *begin = LValue::qexpr({*begin});
         syms = *begin;
     }
 
@@ -559,7 +559,7 @@ lval *var(lenv *e, lval *a, const string &func) {
             lerr::cant_define_mismatched_values(func));
 
     syms = a->pop_first();
-    a = lval::eval_cells(e, a);
+    a = LValue::eval_cells(e, a);
 
     if (a->type == lval_type::error) {
         delete syms;
@@ -578,14 +578,14 @@ lval *var(lenv *e, lval *a, const string &func) {
 
     delete a;
     delete syms;
-    return lval::sexpr();
+    return LValue::sexpr();
 }
 
-lval *def(lenv *e, lval *a) { return var(e, a, "def"); }
+LValue *def(lenv *e, LValue *a) { return var(e, a, "def"); }
 
-lval *put(lenv *e, lval *a) { return var(e, a, "="); }
+LValue *put(lenv *e, LValue *a) { return var(e, a, "="); }
 
-lval *lambda(lenv *e, lval *a, const string &func) {
+LValue *lambda(lenv *e, LValue *a, const string &func) {
     LASSERT_NUM_ARGS(func, a, 2)
     auto begin = a->cells.begin();
 
@@ -604,16 +604,16 @@ lval *lambda(lenv *e, lval *a, const string &func) {
     delete a;
 
     if (func == "\\")
-        return lval::function(formals, body);
+        return LValue::function(formals, body);
     else
-        return lval::macro(formals, body);
+        return LValue::macro(formals, body);
 }
 
-lval *func_lambda(lenv *e, lval *a) { return lambda(e, a, "\\"); }
+LValue *func_lambda(lenv *e, LValue *a) { return lambda(e, a, "\\"); }
 
-lval *macro_lambda(lenv *e, lval *a) { return lambda(e, a, "\\!"); }
+LValue *macro_lambda(lenv *e, LValue *a) { return lambda(e, a, "\\!"); }
 
-lval *load(lenv *e, lval *a) {
+LValue *load(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("load", a, 1)
     auto begin = a->cells.begin();
 
@@ -622,10 +622,10 @@ lval *load(lenv *e, lval *a) {
     mpc_result_t r;
     if (mpc_parse_contents((*begin)->str.c_str(), Lispy::instance()->parser(),
                            &r)) {
-        lval *expr = lval::read((mpc_ast_t *)r.output);
+        LValue *expr = LValue::read((mpc_ast_t *)r.output);
         mpc_ast_delete((mpc_ast_t *)r.output);
         while (!expr->cells.empty()) {
-            auto x = lval::eval(e, expr->pop_first());
+            auto x = LValue::eval(e, expr->pop_first());
             if (x->type == lval_type::error) {
                 delete expr;
                 delete a;
@@ -639,7 +639,7 @@ lval *load(lenv *e, lval *a) {
         delete expr;
         delete a;
 
-        return lval::sexpr();
+        return LValue::sexpr();
     } else {
         char *err_msg = mpc_err_string(r.error);
         mpc_err_delete(r.error);
@@ -652,7 +652,7 @@ lval *load(lenv *e, lval *a) {
     }
 }
 
-lval *print(lenv *e, lval *a) {
+LValue *print(lenv *e, LValue *a) {
     for (auto cell: a->cells) {
         cout << *cell << ' ';
     }
@@ -660,24 +660,24 @@ lval *print(lenv *e, lval *a) {
     cout << endl;
     delete a;
 
-    return lval::sexpr();
+    return LValue::sexpr();
 }
 
-lval *make_error(lenv *e, lval *a) {
+LValue *make_error(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("error", a, 1)
     auto begin = a->cells.begin();
 
     LASSERT_TYPE("error", a, *begin, lval_type::string)
 
-    lval *err = error((*begin)->str);
+    LValue *err = error((*begin)->str);
 
     delete a;
     return err;
 }
 
-lval *read(lenv *e, lval *a) { return read_file(e, a, "<read>"); }
+LValue *read(lenv *e, LValue *a) { return read_file(e, a, "<read>"); }
 
-lval *read_file(lenv *e, lval *a, const string &filename) {
+LValue *read_file(lenv *e, LValue *a, const string &filename) {
     LASSERT_NUM_ARGS("read", a, 1)
     auto begin = a->cells.begin();
 
@@ -686,7 +686,7 @@ lval *read_file(lenv *e, lval *a, const string &filename) {
     mpc_result_t r;
     if (mpc_parse(filename.c_str(), (*begin)->str.c_str(),
                   Lispy::instance()->parser(), &r)) {
-        lval *result = lval::read((mpc_ast_t *)r.output);
+        LValue *result = LValue::read((mpc_ast_t *)r.output);
         result->type = lval_type::qexpr;
 
         mpc_ast_delete((mpc_ast_t *)r.output);
@@ -705,7 +705,7 @@ lval *read_file(lenv *e, lval *a, const string &filename) {
     }
 }
 
-lval *show(lenv *e, lval *a) {
+LValue *show(lenv *e, LValue *a) {
     for (auto cell: a->cells) {
         LASSERT_TYPE("show", a, cell, lval_type::string)
     }
@@ -721,17 +721,17 @@ lval *show(lenv *e, lval *a) {
 
     delete a;
 
-    return lval::sexpr();
+    return LValue::sexpr();
 }
 
-lval *exit(lenv *e, lval *a) {
+LValue *exit(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("exit", a, 1)
     auto begin = a->cells.begin();
 
     LASSERT_TYPE2("exit", a, *begin, lval_type::string, lval_type::integer)
 
-    auto val = lval::take_first(a);
-    lval *err = new lval(lval_type::error);
+    auto val = LValue::take_first(a);
+    LValue *err = new LValue(lval_type::error);
     if (val->type == lval_type::integer) {
         err->integ = val->integ;
         err->err = "";
@@ -750,16 +750,16 @@ lval *exit(lenv *e, lval *a) {
 
 namespace repl {
 
-lval *clear(lenv *e, lval *a) {
+LValue *clear(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("clear", a, 0)
 
     auto lispy = Lispy::instance();
     lispy->flags |= LISPY_FLAG_CLEAR_OUTPUT;
 
-    return lval::sexpr();
+    return LValue::sexpr();
 }
 
-lval *print_env(lenv *e, lval *a) {
+LValue *print_env(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("printenv", a, 0)
     for (auto entry: e->symbols) {
         cout << entry.first << ": " << *entry.second << "\n";
@@ -768,16 +768,16 @@ lval *print_env(lenv *e, lval *a) {
     cout << std::endl;
 
     delete a;
-    return lval::sexpr();
+    return LValue::sexpr();
 }
 
-lval *quit(lenv *e, lval *a) {
+LValue *quit(lenv *e, LValue *a) {
     LASSERT_NUM_ARGS("quit", a, 0)
 
     auto lispy = Lispy::instance();
     lispy->flags |= LISPY_FLAG_EXIT;
 
-    return lval::sexpr();
+    return LValue::sexpr();
 }
 
 } // namespace repl

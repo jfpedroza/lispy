@@ -1,18 +1,18 @@
 #include "lenv.hpp"
 #include <algorithm>
-#include "lval.hpp"
+#include "LValue.hpp"
 #include "lval_error.hpp"
 
 using std::string;
 using std::vector;
-auto error = lval::error;
+auto error = LValue::error;
 
 lenv::lenv() { this->parent = nullptr; }
 
 lenv::lenv(const lenv &other): symbols(table_type(other.symbols)) {
     this->parent = other.parent;
     for (auto it = this->symbols.begin(); it != this->symbols.end(); ++it) {
-        it->second = new lval(it->second);
+        it->second = new LValue(it->second);
     }
 }
 
@@ -47,10 +47,10 @@ vector<const string *> lenv::keys(const string &prefix) const {
     return keys;
 }
 
-lval *lenv::get(const string &sym) const {
+LValue *lenv::get(const string &sym) const {
     auto it = symbols.find(sym);
     if (it != symbols.end()) {
-        return new lval(it->second);
+        return new LValue(it->second);
     }
 
     if (parent) {
@@ -60,17 +60,17 @@ lval *lenv::get(const string &sym) const {
     return error(lerr::unknown_sym(sym));
 }
 
-void lenv::put(const string &sym, const lval *const v) {
+void lenv::put(const string &sym, const LValue *const v) {
     auto it = symbols.find(sym);
     if (it != symbols.end()) {
         delete it->second;
-        it->second = new lval(v);
+        it->second = new LValue(v);
     } else {
-        symbols.insert(std::make_pair(sym, new lval(v)));
+        symbols.insert(std::make_pair(sym, new LValue(v)));
     }
 }
 
-void lenv::def(const string &sym, const lval *const v) {
+void lenv::def(const string &sym, const LValue *const v) {
     auto e = this;
     while (e->parent) e = e->parent;
 
@@ -78,13 +78,13 @@ void lenv::def(const string &sym, const lval *const v) {
 }
 
 void lenv::add_builtin_function(const string &name, lbuiltin func) {
-    symbols.insert(std::make_pair(name, lval::function(func)));
+    symbols.insert(std::make_pair(name, LValue::function(func)));
 }
 
 void lenv::add_builtin_macro(const string &name, lbuiltin func) {
-    symbols.insert(std::make_pair(name, lval::macro(func)));
+    symbols.insert(std::make_pair(name, LValue::macro(func)));
 }
 
 void lenv::add_builtin_command(const string &name, lbuiltin func) {
-    symbols.insert(std::make_pair(name, lval::command(func)));
+    symbols.insert(std::make_pair(name, LValue::command(func)));
 }

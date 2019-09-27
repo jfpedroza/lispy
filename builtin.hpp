@@ -4,10 +4,10 @@
 #include <functional>
 #include <string>
 
-struct lval;
+struct LValue;
 struct lenv;
 
-using lbuiltin = std::function<lval *(lenv *, lval *)>;
+using lbuiltin = std::function<LValue *(lenv *, LValue *)>;
 
 namespace builtin {
 
@@ -15,60 +15,60 @@ void add_builtins(lenv *env);
 void add_builtin_commands(lenv *env);
 
 // Variable functions
-lval *def(lenv *env, lval *args);
-lval *put(lenv *env, lval *args);
-lval *func_lambda(lenv *env, lval *args);
-lval *macro_lambda(lenv *env, lval *args);
+LValue *def(lenv *env, LValue *args);
+LValue *put(lenv *env, LValue *args);
+LValue *func_lambda(lenv *env, LValue *args);
+LValue *macro_lambda(lenv *env, LValue *args);
 
 // Operators
 lbuiltin ope(const std::string &op);
-lval *handle_op(lenv *env, lval *args, const std::string &op);
-lval *add(lval *x, lval *y);
-lval *substract(lval *x, lval *y);
-lval *multiply(lval *x, lval *y);
-lval *divide(lval *x, lval *y);
-lval *reminder(lval *x, lval *y);
-lval *power(lval *x, lval *y);
-lval *negate(lval *x);
+LValue *handle_op(lenv *env, LValue *args, const std::string &op);
+LValue *add(LValue *x, LValue *y);
+LValue *substract(LValue *x, LValue *y);
+LValue *multiply(LValue *x, LValue *y);
+LValue *divide(LValue *x, LValue *y);
+LValue *reminder(LValue *x, LValue *y);
+LValue *power(LValue *x, LValue *y);
+LValue *negate(LValue *x);
 
 // Math functions
-lval *minimum(lval *x, lval *y);
-lval *maximum(lval *x, lval *y);
+LValue *minimum(LValue *x, LValue *y);
+LValue *maximum(LValue *x, LValue *y);
 
 // Comparison functions
 lbuiltin ordering_op(const std::string &op);
-lval *ord(lenv *env, lval *args, const std::string &op);
-lval *cmp(lenv *env, lval *args, const std::string &op);
-lval *equals(lenv *env, lval *args);
-lval *not_equals(lenv *env, lval *args);
-lval *if_(lenv *env, lval *args);
+LValue *ord(lenv *env, LValue *args, const std::string &op);
+LValue *cmp(lenv *env, LValue *args, const std::string &op);
+LValue *equals(lenv *env, LValue *args);
+LValue *not_equals(lenv *env, LValue *args);
+LValue *if_(lenv *env, LValue *args);
 
 // List functions
-lval *head(lenv *env, lval *args);
-lval *tail(lenv *env, lval *args);
-lval *list(lenv *env, lval *args);
-lval *eval(lenv *env, lval *args);
-lval *join(lenv *env, lval *args);
-lval *cons(lenv *env, lval *args);
-lval *len(lenv *env, lval *args);
-lval *init(lenv *env, lval *args);
+LValue *head(lenv *env, LValue *args);
+LValue *tail(lenv *env, LValue *args);
+LValue *list(lenv *env, LValue *args);
+LValue *eval(lenv *env, LValue *args);
+LValue *join(lenv *env, LValue *args);
+LValue *cons(lenv *env, LValue *args);
+LValue *len(lenv *env, LValue *args);
+LValue *init(lenv *env, LValue *args);
 
 // String functions
-lval *load(lenv *env, lval *args);
-lval *print(lenv *env, lval *args);
-lval *make_error(lenv *env, lval *args);
-lval *read(lenv *env, lval *args);
-lval *read_file(lenv *env, lval *args, const std::string &filename);
-lval *show(lenv *env, lval *args);
+LValue *load(lenv *env, LValue *args);
+LValue *print(lenv *env, LValue *args);
+LValue *make_error(lenv *env, LValue *args);
+LValue *read(lenv *env, LValue *args);
+LValue *read_file(lenv *env, LValue *args, const std::string &filename);
+LValue *show(lenv *env, LValue *args);
 
 // System functions
-lval *exit(lenv *env, lval *args);
+LValue *exit(lenv *env, LValue *args);
 
 // REPL commands
 namespace repl {
-lval *clear(lenv *env, lval *args);
-lval *print_env(lenv *env, lval *args);
-lval *quit(lenv *env, lval *args);
+LValue *clear(lenv *env, LValue *args);
+LValue *print_env(lenv *env, LValue *args);
+LValue *quit(lenv *env, LValue *args);
 } // namespace repl
 } // namespace builtin
 

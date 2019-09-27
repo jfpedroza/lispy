@@ -2,7 +2,7 @@
 #include <linenoise.h>
 #include "generated.hpp"
 #include "lispy_config.h"
-#include "lval.hpp"
+#include "LValue.hpp"
 
 using std::cerr;
 using std::cout;
@@ -86,8 +86,8 @@ int Lispy::run(int argc, char *argv[]) {
 }
 
 bool Lispy::load_prelude() {
-    lval *args = lval::sexpr({new lval(string(prelude))});
-    lval *expr = builtin::read_file(&env, args, "prelude.lspy");
+    LValue *args = LValue::sexpr({new LValue(string(prelude))});
+    LValue *expr = builtin::read_file(&env, args, "prelude.lspy");
 
     if (expr->type == lval_type::error) {
         cerr << *expr << endl;
@@ -96,7 +96,7 @@ bool Lispy::load_prelude() {
     }
 
     while (!expr->cells.empty()) {
-        auto x = lval::eval(&env, expr->pop_first());
+        auto x = LValue::eval(&env, expr->pop_first());
         if (x->type == lval_type::error) {
             cerr << "Failed to load prelude: " << *x << endl;
             delete x;
@@ -139,8 +139,8 @@ void Lispy::run_interactive() {
         /* Attempt to Parse the user Input */
         mpc_result_t r;
         if (mpc_parse("<stdin>", input, lispy_parser, &r)) {
-            lval *result = lval::read((mpc_ast_t *)r.output);
-            result = lval::eval(&env, result);
+            LValue *result = LValue::read((mpc_ast_t *)r.output);
+            result = LValue::eval(&env, result);
             bool cont = process_result(result);
             delete result;
             mpc_ast_delete((mpc_ast_t *)r.output);
@@ -158,7 +158,7 @@ void Lispy::run_interactive() {
     linenoiseHistoryFree();
 }
 
-bool Lispy::process_result(lval *result) {
+bool Lispy::process_result(LValue *result) {
     if (flags & LISPY_FLAG_CLEAR_OUTPUT) {
         linenoiseClearScreen();
         flags &= ~LISPY_FLAG_CLEAR_OUTPUT;
@@ -191,8 +191,8 @@ bool Lispy::load_files(const vector<string> &files) {
     flags |= LISPY_FLAG_FAIL_ON_ERROR;
 
     for (auto file: files) {
-        lval *args = lval::sexpr({new lval(file)});
-        lval *x = builtin::load(&env, args);
+        LValue *args = LValue::sexpr({new LValue(file)});
+        LValue *x = builtin::load(&env, args);
 
         bool cont = process_result(x);
         delete x;
@@ -207,8 +207,8 @@ bool Lispy::eval_strings(const vector<string> &strings) {
     flags |= LISPY_FLAG_FAIL_ON_ERROR;
 
     for (auto str: strings) {
-        lval *args = lval::sexpr({new lval(str)});
-        lval *expr = builtin::read(&env, args);
+        LValue *args = LValue::sexpr({new LValue(str)});
+        LValue *expr = builtin::read(&env, args);
 
         if (expr->type == lval_type::error) {
             cout << *expr << endl;
@@ -217,7 +217,7 @@ bool Lispy::eval_strings(const vector<string> &strings) {
             return false;
         }
 
-        auto x = lval::eval_qexpr(&env, expr);
+        auto x = LValue::eval_qexpr(&env, expr);
 
         bool cont = process_result(x);
         delete x;

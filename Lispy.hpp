@@ -33,7 +33,7 @@ class Lispy {
     void run_interactive();
     bool load_files(const std::vector<std::string> &files);
     bool eval_strings(const std::vector<std::string> &strings);
-    bool process_result(lval *result);
+    bool process_result(LValue *result);
 
     friend void completion_hook(char const *prefix, linenoiseCompletions *lc);
 
