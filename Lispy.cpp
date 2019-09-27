@@ -1,4 +1,4 @@
-#include "lispy.hpp"
+#include "Lispy.hpp"
 #include <linenoise.h>
 #include "generated.hpp"
 #include "lispy_config.h"
@@ -10,9 +10,9 @@ using std::endl;
 using std::string;
 using std::vector;
 
-lispy *lispy::_instance = nullptr;
+Lispy *Lispy::_instance = nullptr;
 
-lispy::lispy()
+Lispy::Lispy()
     : flags(LISPY_NO_FLAGS),
       exit_code(0),
       cmd_line("The Lispy interpreter", ' ', LISPY_VERSION),
@@ -42,17 +42,17 @@ lispy::lispy()
     _instance = this;
 }
 
-lispy::~lispy() {
+Lispy::~Lispy() {
     mpc_cleanup(11, integer_parser, decimal_parser, number_parser,
                 symbol_parser, string_parser, sexpr_parser, qexpr_parser,
                 expr_parser, comment_parser, command_parser, lispy_parser);
 }
 
-lispy *lispy::instance() { return _instance; }
+Lispy *Lispy::instance() { return _instance; }
 
-mpc_parser_t *lispy::parser() { return lispy_parser; }
+mpc_parser_t *Lispy::parser() { return lispy_parser; }
 
-int lispy::run(int argc, char *argv[]) {
+int Lispy::run(int argc, char *argv[]) {
     // Load prelude
     if (!load_prelude()) {
         return 1;
@@ -85,7 +85,7 @@ int lispy::run(int argc, char *argv[]) {
     return exit_code;
 }
 
-bool lispy::load_prelude() {
+bool Lispy::load_prelude() {
     lval *args = lval::sexpr({new lval(string(prelude))});
     lval *expr = builtin::read_file(&env, args, "prelude.lspy");
 
@@ -112,14 +112,14 @@ bool lispy::load_prelude() {
 }
 
 void completion_hook(char const *prefix, linenoiseCompletions *lc) {
-    auto lspy = lispy::instance();
-    auto symbols = lspy->env.keys(prefix);
+    auto lispy = Lispy::instance();
+    auto symbols = lispy->env.keys(prefix);
     for (auto sym: symbols) {
         linenoiseAddCompletion(lc, sym->c_str());
     }
 }
 
-void lispy::run_interactive() {
+void Lispy::run_interactive() {
     linenoiseInstallWindowChangeHandler();
 
     linenoiseSetCompletionCallback(completion_hook);
@@ -158,7 +158,7 @@ void lispy::run_interactive() {
     linenoiseHistoryFree();
 }
 
-bool lispy::process_result(lval *result) {
+bool Lispy::process_result(lval *result) {
     if (flags & LISPY_FLAG_CLEAR_OUTPUT) {
         linenoiseClearScreen();
         flags &= ~LISPY_FLAG_CLEAR_OUTPUT;
@@ -187,7 +187,7 @@ bool lispy::process_result(lval *result) {
     return true;
 }
 
-bool lispy::load_files(const vector<string> &files) {
+bool Lispy::load_files(const vector<string> &files) {
     flags |= LISPY_FLAG_FAIL_ON_ERROR;
 
     for (auto file: files) {
@@ -203,7 +203,7 @@ bool lispy::load_files(const vector<string> &files) {
     return true;
 }
 
-bool lispy::eval_strings(const vector<string> &strings) {
+bool Lispy::eval_strings(const vector<string> &strings) {
     flags |= LISPY_FLAG_FAIL_ON_ERROR;
 
     for (auto str: strings) {

@@ -3,8 +3,8 @@
 #include <functional>
 #include <iostream>
 #include <unordered_map>
+#include "Lispy.hpp"
 #include "lenv.hpp"
-#include "lispy.hpp"
 #include "lval.hpp"
 #include "lval_error.hpp"
 
@@ -620,7 +620,7 @@ lval *load(lenv *e, lval *a) {
     LASSERT_TYPE("load", a, *begin, lval_type::string)
 
     mpc_result_t r;
-    if (mpc_parse_contents((*begin)->str.c_str(), lispy::instance()->parser(),
+    if (mpc_parse_contents((*begin)->str.c_str(), Lispy::instance()->parser(),
                            &r)) {
         lval *expr = lval::read((mpc_ast_t *)r.output);
         mpc_ast_delete((mpc_ast_t *)r.output);
@@ -685,7 +685,7 @@ lval *read_file(lenv *e, lval *a, const string &filename) {
 
     mpc_result_t r;
     if (mpc_parse(filename.c_str(), (*begin)->str.c_str(),
-                  lispy::instance()->parser(), &r)) {
+                  Lispy::instance()->parser(), &r)) {
         lval *result = lval::read((mpc_ast_t *)r.output);
         result->type = lval_type::qexpr;
 
@@ -740,8 +740,8 @@ lval *exit(lenv *e, lval *a) {
         err->err = val->str;
     }
 
-    auto lspy = lispy::instance();
-    lspy->flags |= LISPY_FLAG_EXIT;
+    auto lispy = Lispy::instance();
+    lispy->flags |= LISPY_FLAG_EXIT;
 
     delete val;
 
@@ -753,8 +753,8 @@ namespace repl {
 lval *clear(lenv *e, lval *a) {
     LASSERT_NUM_ARGS("clear", a, 0)
 
-    auto lspy = lispy::instance();
-    lspy->flags |= LISPY_FLAG_CLEAR_OUTPUT;
+    auto lispy = Lispy::instance();
+    lispy->flags |= LISPY_FLAG_CLEAR_OUTPUT;
 
     return lval::sexpr();
 }
@@ -774,8 +774,8 @@ lval *print_env(lenv *e, lval *a) {
 lval *quit(lenv *e, lval *a) {
     LASSERT_NUM_ARGS("quit", a, 0)
 
-    auto lspy = lispy::instance();
-    lspy->flags |= LISPY_FLAG_EXIT;
+    auto lispy = Lispy::instance();
+    lispy->flags |= LISPY_FLAG_EXIT;
 
     return lval::sexpr();
 }

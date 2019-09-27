@@ -12,12 +12,12 @@
 #define LISPY_FLAG_EXIT 0x4
 #define LISPY_FLAG_FAIL_ON_ERROR 0x8
 
-class lispy {
+class Lispy {
    public:
-    lispy();
-    ~lispy();
+    Lispy();
+    ~Lispy();
 
-    static lispy *instance();
+    static Lispy *instance();
 
     int run(int argc, char *argv[]);
     mpc_parser_t *parser();
@@ -27,7 +27,7 @@ class lispy {
    private:
     lenv env;
     int exit_code;
-    static lispy *_instance;
+    static Lispy *_instance;
 
     bool load_prelude();
     void run_interactive();
