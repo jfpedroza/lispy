@@ -15,7 +15,7 @@ string div_zero() { return "Division by zero!"; }
 
 string int_mod() { return "Module operation can only be applied to integers!"; }
 
-string sexpr_not_function(lval_type got) {
+string sexpr_not_function(LValue::Type got) {
     stringstream ss;
     ss << "S-expression does not start with function!. Got " << got << ".";
     return ss.str();
@@ -35,16 +35,16 @@ string too_many_args(size_t got, size_t expected) {
     return ss.str();
 }
 
-string passed_incorrect_type(const string &func, lval_type got,
-                             lval_type expected) {
+string passed_incorrect_type(const string &func, LValue::Type got,
+                             LValue::Type expected) {
     stringstream ss;
     ss << "Function '" << func << "' passed incorrect type. Got " << got
        << ", Expected " << expected << ".";
     return ss.str();
 }
 
-string passed_incorrect_type(const string &func, lval_type got,
-                             std::initializer_list<lval_type> expected) {
+string passed_incorrect_type(const string &func, LValue::Type got,
+                             std::initializer_list<LValue::Type> expected) {
     stringstream ss;
     ss << "Function '" << func << "' passed incorrect type. Got " << got
        << ", Expected one of ";
@@ -69,7 +69,7 @@ string passed_empty_string(const string &func) {
     return "Function '" + func + "' passed empty string!";
 }
 
-string cant_define_non_sym(const string &func, lval_type got) {
+string cant_define_non_sym(const string &func, LValue::Type got) {
     stringstream ss;
     ss << "Function '" << func << "' cannot define non-symbol!. Got " << got
        << ".";

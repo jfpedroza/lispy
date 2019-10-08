@@ -1,7 +1,7 @@
 #include <csignal>
 #include <cstdlib>
 #include <iostream>
-#include "lispy.hpp"
+#include "Lispy.hpp"
 
 using std::cout;
 using std::endl;
@@ -9,7 +9,7 @@ using std::endl;
 void exit_handler(int);
 
 int main(int argc, char *argv[]) {
-    lispy lspy;
+    Lispy lispy;
 
     struct sigaction sig_handler;
     sig_handler.sa_handler = exit_handler;
@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     sig_handler.sa_flags = 0;
     sigaction(SIGINT, &sig_handler, nullptr);
 
-    return lspy.run(argc, argv);
+    return lispy.run(argc, argv);
 }
 
 void exit_handler(int) {
